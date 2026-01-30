@@ -45,6 +45,12 @@ if USE_MONGODB:
         brain_collection = db['brain']
         logs_collection = db['logs']
         verified_models_collection = db['verified_models']
+        detection_logs_collection = db['detection_logs']
+        # NOWE: Kolekcje dla wszystkich słowników
+        external_db_collection = db['external_db']
+        static_identifiers_collection = db['static_identifiers']
+        android_identifiers_collection = db['android_identifiers']
+        accessory_codes_collection = db['accessory_codes']
         logger.info("✅ MongoDB connected successfully")
     except Exception as e:
         logger.error(f"❌ MongoDB connection failed: {e}")
@@ -140,14 +146,16 @@ ACCESSORY_CODES = {
 }
 
 def load_data():
-    """Load brain data from MongoDB or JSON file."""
-    global BRAIN, EXTERNAL_DB
+    """Load all data from MongoDB (priority) or JSON files (fallback)."""
+    global BRAIN, EXTERNAL_DB, STATIC_IDENTIFIERS, ANDROID_IDENTIFIERS, ACCESSORY_CODES
+
+    # 1. Ładowanie BRAIN
     try:
         if USE_MONGODB:
             brain_data = brain_collection.find_one({'_id': 'brain_v18'})
             if brain_data:
                 BRAIN = brain_data.get('data', {})
-                logger.info(f"Brain loaded from MongoDB: {len(BRAIN)} signatures")
+                logger.info(f"✅ Brain loaded from MongoDB: {len(BRAIN)} signatures")
             else:
                 BRAIN = {}
                 logger.info("No brain data in MongoDB, starting fresh")
@@ -162,21 +170,71 @@ def load_data():
         logger.error(f"Error loading brain: {e}")
         BRAIN = {}
 
-    # Załaduj bazę modeli z pliku JSON (jeśli istnieje) lub użyj domyślnych
+    # 2. Ładowanie STATIC_IDENTIFIERS z MongoDB
+    if USE_MONGODB:
+        try:
+            static_data = static_identifiers_collection.find_one({'_id': 'static_identifiers'})
+            if static_data and 'data' in static_data:
+                STATIC_IDENTIFIERS = static_data['data']
+                logger.info(f"✅ Static Identifiers loaded from MongoDB: {len(STATIC_IDENTIFIERS)} models")
+        except Exception as e:
+            logger.warning(f"⚠️ Error loading Static Identifiers from MongoDB: {e}")
+
+    # 3. Ładowanie ANDROID_IDENTIFIERS z MongoDB
+    if USE_MONGODB:
+        try:
+            android_data = android_identifiers_collection.find_one({'_id': 'android_identifiers'})
+            if android_data and 'data' in android_data:
+                ANDROID_IDENTIFIERS = android_data['data']
+                logger.info(f"✅ Android Identifiers loaded from MongoDB: {len(ANDROID_IDENTIFIERS)} models")
+        except Exception as e:
+            logger.warning(f"⚠️ Error loading Android Identifiers from MongoDB: {e}")
+
+    # 4. Ładowanie ACCESSORY_CODES z MongoDB
+    if USE_MONGODB:
+        try:
+            accessory_data = accessory_codes_collection.find_one({'_id': 'accessory_codes'})
+            if accessory_data and 'data' in accessory_data:
+                ACCESSORY_CODES = accessory_data['data']
+                logger.info(f"✅ Accessory Codes loaded from MongoDB: {len(ACCESSORY_CODES)} models")
+        except Exception as e:
+            logger.warning(f"⚠️ Error loading Accessory Codes from MongoDB: {e}")
+
+    # 5. Ładowanie EXTERNAL_DB (Matomo) z MongoDB lub pliku
     EXTERNAL_DB = {**STATIC_IDENTIFIERS, **ANDROID_IDENTIFIERS}
 
-    external_db_file = 'shark_external_db.json'
-    if os.path.exists(external_db_file):
+    if USE_MONGODB:
         try:
-            with open(external_db_file, 'r', encoding='utf-8') as f:
-                loaded_db = json.load(f)
+            external_data = external_db_collection.find_one({'_id': 'external_db'})
+            if external_data and 'data' in external_data:
+                loaded_db = external_data['data']
                 EXTERNAL_DB.update(loaded_db)
-                logger.info(f"✅ External DB loaded: {len(EXTERNAL_DB)} models")
+                logger.info(f"✅ External DB loaded from MongoDB: {len(EXTERNAL_DB)} total models")
+            else:
+                logger.info("No External DB in MongoDB, will try JSON file")
+                # Fallback do pliku JSON
+                external_db_file = 'shark_external_db.json'
+                if os.path.exists(external_db_file):
+                    with open(external_db_file, 'r', encoding='utf-8') as f:
+                        loaded_db = json.load(f)
+                        EXTERNAL_DB.update(loaded_db)
+                        logger.info(f"✅ External DB loaded from file: {len(EXTERNAL_DB)} models")
         except Exception as e:
-            logger.error(f"Error loading external DB: {e}")
+            logger.error(f"Error loading External DB: {e}")
     else:
-        logger.warning(f"⚠️ External DB file not found. Using default models only ({len(EXTERNAL_DB)} models)")
-        logger.info("💡 Run 'python setup_database.py' to import 1000+ models from Matomo")
+        # Tryb JSON - załaduj z pliku
+        external_db_file = 'shark_external_db.json'
+        if os.path.exists(external_db_file):
+            try:
+                with open(external_db_file, 'r', encoding='utf-8') as f:
+                    loaded_db = json.load(f)
+                    EXTERNAL_DB.update(loaded_db)
+                    logger.info(f"✅ External DB loaded from file: {len(EXTERNAL_DB)} models")
+            except Exception as e:
+                logger.error(f"Error loading external DB: {e}")
+        else:
+            logger.warning(f"⚠️ External DB file not found. Using default models only ({len(EXTERNAL_DB)} models)")
+            logger.info("💡 Run 'python setup_database.py' to import 1000+ models from Matomo")
 
 def save_brain():
     """Save brain data to MongoDB or JSON file."""
@@ -433,10 +491,28 @@ def check_brain():
         if ua_id:
             model_name = EXTERNAL_DB.get(ua_id) or STATIC_IDENTIFIERS.get(ua_id) or ANDROID_IDENTIFIERS.get(ua_id)
             if model_name:
-                logger.info(f"Device identified via UA_EXACT: {model_name}")
+                logger.info(f"✅ Device identified via UA_EXACT: {model_name}")
                 accessory_codes = ACCESSORY_CODES.get(model_name, {"screen": "N/A", "case": "N/A"})
                 detection_log["method"] = "UA_EXACT"
                 detection_log["matched_id"] = ua_id
+
+                # Zapisz log sukcesu
+                if USE_MONGODB and detection_logs_collection:
+                    try:
+                        detection_logs_collection.insert_one({
+                            "timestamp": datetime.utcnow(),
+                            "status": "SUCCESS_UA",
+                            "model": model_name,
+                            "confidence": 100,
+                            "method": "UA_EXACT",
+                            "ua_id": ua_id,
+                            "fingerprint": f"{width}x{height} @ {dpr}x DPR, {refresh_rate}Hz, RAM: {ram}GB",
+                            "gpu": gpu,
+                            "user_agent": user_agent[:200]
+                        })
+                    except Exception as e:
+                        logger.error(f"Error saving detection log: {e}")
+
                 return jsonify({
                     "found": True,
                     "model": model_name,
@@ -447,9 +523,27 @@ def check_brain():
                 })
 
             # Priorytet 2: User-Agent wykryty, ale nie ma w bazie - zwróć surowy ID
-            logger.info(f"Device identified via UA_RAW: {ua_id}")
+            logger.info(f"✅ Device identified via UA_RAW: {ua_id}")
             detection_log["method"] = "UA_RAW"
             detection_log["matched_id"] = ua_id
+
+            # Zapisz log sukcesu
+            if USE_MONGODB and detection_logs_collection:
+                try:
+                    detection_logs_collection.insert_one({
+                        "timestamp": datetime.utcnow(),
+                        "status": "SUCCESS_UA_RAW",
+                        "model": ua_id,
+                        "confidence": 90,
+                        "method": "UA_CODE",
+                        "ua_id": ua_id,
+                        "fingerprint": f"{width}x{height} @ {dpr}x DPR, {refresh_rate}Hz, RAM: {ram}GB",
+                        "gpu": gpu,
+                        "user_agent": user_agent[:200]
+                    })
+                except Exception as e:
+                    logger.error(f"Error saving detection log: {e}")
+
             return jsonify({
                 "found": True,
                 "model": ua_id,
@@ -467,11 +561,29 @@ def check_brain():
             top_model = max(models, key=models.get)
             total_count = sum(models.values())
             confidence = int((models[top_model] / total_count) * 100)
-            logger.info(f"Device identified via AI: {top_model} ({confidence}% confidence)")
+            logger.info(f"✅ Device identified via AI: {top_model} ({confidence}% confidence)")
             accessory_codes = ACCESSORY_CODES.get(top_model, {"screen": "N/A", "case": "N/A"})
             detection_log["method"] = "AI_FINGERPRINT"
             detection_log["signature"] = signature
             detection_log["ai_models"] = dict(models)
+
+            # Zapisz log sukcesu
+            if USE_MONGODB and detection_logs_collection:
+                try:
+                    detection_logs_collection.insert_one({
+                        "timestamp": datetime.utcnow(),
+                        "status": "SUCCESS_AI",
+                        "model": top_model,
+                        "confidence": confidence,
+                        "method": "AI_FINGERPRINT",
+                        "fingerprint": f"{width}x{height} @ {dpr}x DPR, {refresh_rate}Hz, RAM: {ram}GB",
+                        "gpu": gpu,
+                        "user_agent": user_agent[:200],
+                        "ai_models": dict(models)
+                    })
+                except Exception as e:
+                    logger.error(f"Error saving detection log: {e}")
+
             return jsonify({
                 "found": True,
                 "model": top_model,
@@ -487,7 +599,64 @@ def check_brain():
         if suggestions:
             detection_log["method"] = "HEURISTIC_TOP3"
             detection_log["suggestions"] = suggestions
+
+            # AUTOMATYCZNA DECYZJA: Jeśli pierwszy model ma ≥90% a drugi <60%, uznaj automatycznie
+            if len(suggestions) >= 1:
+                top_confidence = suggestions[0]["confidence"]
+                second_confidence = suggestions[1]["confidence"] if len(suggestions) >= 2 else 0
+
+                if top_confidence >= 90 and second_confidence < 60:
+                    # Automatyczna decyzja - pewność wystarczająco wysoka
+                    model_name = suggestions[0]["model"]
+                    accessory_codes = ACCESSORY_CODES.get(model_name, {"screen": "N/A", "case": "N/A"})
+
+                    logger.info(f"✅ AUTO-DECISION: {model_name} ({top_confidence}% vs {second_confidence}%)")
+
+                    # Zapisz log sukcesu
+                    if USE_MONGODB and detection_logs_collection:
+                        try:
+                            detection_logs_collection.insert_one({
+                                "timestamp": datetime.utcnow(),
+                                "status": "SUCCESS_AUTO",
+                                "model": model_name,
+                                "confidence": top_confidence,
+                                "method": "HEURISTIC_AUTO",
+                                "fingerprint": f"{width}x{height} @ {dpr}x DPR, {refresh_rate}Hz, RAM: {ram}GB",
+                                "gpu": gpu,
+                                "user_agent": user_agent[:200]
+                            })
+                        except Exception as e:
+                            logger.error(f"Error saving detection log: {e}")
+
+                    return jsonify({
+                        "found": True,
+                        "model": model_name,
+                        "confidence": top_confidence,
+                        "source": "HEURISTIC_AUTO",
+                        "codes": accessory_codes,
+                        "detection_log": detection_log,
+                        "auto_decision": True
+                    })
+
+            # Brak automatycznej decyzji - pokaż sugestie
             logger.info(f"Device not found - suggesting top 3 matches")
+
+            # Zapisz log porażki
+            if USE_MONGODB and detection_logs_collection:
+                try:
+                    detection_logs_collection.insert_one({
+                        "timestamp": datetime.utcnow(),
+                        "status": "FAILED",
+                        "suggestions": [s["model"] for s in suggestions[:3]],
+                        "top_confidence": suggestions[0]["confidence"] if suggestions else 0,
+                        "method": "HEURISTIC_SUGGESTIONS",
+                        "fingerprint": f"{width}x{height} @ {dpr}x DPR, {refresh_rate}Hz, RAM: {ram}GB",
+                        "gpu": gpu,
+                        "user_agent": user_agent[:200]
+                    })
+                except Exception as e:
+                    logger.error(f"Error saving detection log: {e}")
+
             return jsonify({
                 "found": False,
                 "suggestions": suggestions,
@@ -497,6 +666,21 @@ def check_brain():
 
         logger.info("Device not found in brain")
         detection_log["method"] = "NOT_FOUND"
+
+        # Zapisz log porażki (brak sugestii)
+        if USE_MONGODB and detection_logs_collection:
+            try:
+                detection_logs_collection.insert_one({
+                    "timestamp": datetime.utcnow(),
+                    "status": "FAILED_NO_MATCH",
+                    "method": "NOT_FOUND",
+                    "fingerprint": f"{width}x{height} @ {dpr}x DPR, {refresh_rate}Hz, RAM: {ram}GB",
+                    "gpu": gpu,
+                    "user_agent": user_agent[:200]
+                })
+            except Exception as e:
+                logger.error(f"Error saving detection log: {e}")
+
         return jsonify({
             "found": False,
             "codes": {"screen": "N/A", "case": "N/A"},
@@ -789,6 +973,129 @@ def admin_delete_verified_model(system_name):
             return jsonify({"status": "ERROR", "error": "MongoDB not available"}), 500
     except Exception as e:
         logger.error(f"Error deleting verified model: {e}")
+        return jsonify({"status": "ERROR", "error": str(e)}), 500
+
+@app.route('/admin/api/detection-logs', methods=['GET'])
+def admin_get_detection_logs():
+    """API: Pobierz logi rozpoznań (sukces i porażka)."""
+    try:
+        if USE_MONGODB and detection_logs_collection:
+            # Pobierz ostatnie 100 logów
+            logs = list(detection_logs_collection.find({}, {'_id': 0}).sort('timestamp', -1).limit(100))
+
+            # Statystyki
+            total_logs = detection_logs_collection.count_documents({})
+            success_count = detection_logs_collection.count_documents({'status': {'$regex': '^SUCCESS'}})
+            failed_count = detection_logs_collection.count_documents({'status': {'$regex': '^FAILED'}})
+
+            return jsonify({
+                "status": "OK",
+                "logs": logs,
+                "stats": {
+                    "total": total_logs,
+                    "success": success_count,
+                    "failed": failed_count,
+                    "success_rate": round((success_count / total_logs * 100) if total_logs > 0 else 0, 1)
+                }
+            })
+        else:
+            return jsonify({"status": "ERROR", "error": "MongoDB not available"}), 500
+    except Exception as e:
+        logger.error(f"Error getting detection logs: {e}")
+        return jsonify({"status": "ERROR", "error": str(e)}), 500
+
+@app.route('/admin/api/detection-logs/clear', methods=['POST'])
+def admin_clear_detection_logs():
+    """API: Wyczyść logi rozpoznań."""
+    try:
+        if USE_MONGODB and detection_logs_collection:
+            result = detection_logs_collection.delete_many({})
+            logger.warning(f"⚠️ ADMIN: Detection logs cleared! Deleted {result.deleted_count} logs")
+            return jsonify({"status": "OK", "message": f"✅ Usunięto {result.deleted_count} logów!"})
+        else:
+            return jsonify({"status": "ERROR", "error": "MongoDB not available"}), 500
+    except Exception as e:
+        logger.error(f"Error clearing detection logs: {e}")
+        return jsonify({"status": "ERROR", "error": str(e)}), 500
+
+@app.route('/admin/api/sync-to-mongodb', methods=['POST'])
+def admin_sync_to_mongodb():
+    """API: Synchronizuj wszystkie dane do MongoDB."""
+    try:
+        if not USE_MONGODB:
+            return jsonify({"status": "ERROR", "error": "MongoDB not available"}), 500
+
+        results = {}
+
+        # 1. Synchronizuj STATIC_IDENTIFIERS
+        try:
+            static_identifiers_collection.update_one(
+                {'_id': 'static_identifiers'},
+                {'$set': {'data': STATIC_IDENTIFIERS, 'updated_at': datetime.utcnow()}},
+                upsert=True
+            )
+            results['static_identifiers'] = len(STATIC_IDENTIFIERS)
+            logger.info(f"✅ Static Identifiers synced: {len(STATIC_IDENTIFIERS)} models")
+        except Exception as e:
+            results['static_identifiers'] = f"ERROR: {e}"
+
+        # 2. Synchronizuj ANDROID_IDENTIFIERS
+        try:
+            android_identifiers_collection.update_one(
+                {'_id': 'android_identifiers'},
+                {'$set': {'data': ANDROID_IDENTIFIERS, 'updated_at': datetime.utcnow()}},
+                upsert=True
+            )
+            results['android_identifiers'] = len(ANDROID_IDENTIFIERS)
+            logger.info(f"✅ Android Identifiers synced: {len(ANDROID_IDENTIFIERS)} models")
+        except Exception as e:
+            results['android_identifiers'] = f"ERROR: {e}"
+
+        # 3. Synchronizuj ACCESSORY_CODES
+        try:
+            accessory_codes_collection.update_one(
+                {'_id': 'accessory_codes'},
+                {'$set': {'data': ACCESSORY_CODES, 'updated_at': datetime.utcnow()}},
+                upsert=True
+            )
+            results['accessory_codes'] = len(ACCESSORY_CODES)
+            logger.info(f"✅ Accessory Codes synced: {len(ACCESSORY_CODES)} models")
+        except Exception as e:
+            results['accessory_codes'] = f"ERROR: {e}"
+
+        # 4. Synchronizuj EXTERNAL_DB (Matomo)
+        try:
+            external_db_collection.update_one(
+                {'_id': 'external_db'},
+                {'$set': {'data': EXTERNAL_DB, 'updated_at': datetime.utcnow()}},
+                upsert=True
+            )
+            results['external_db'] = len(EXTERNAL_DB)
+            logger.info(f"✅ External DB synced: {len(EXTERNAL_DB)} models")
+        except Exception as e:
+            results['external_db'] = f"ERROR: {e}"
+
+        # 5. Synchronizuj BRAIN (już istnieje, ale dla pewności)
+        try:
+            brain_collection.update_one(
+                {'_id': 'brain_v18'},
+                {'$set': {'data': BRAIN, 'updated_at': datetime.utcnow()}},
+                upsert=True
+            )
+            results['brain'] = len(BRAIN)
+            logger.info(f"✅ Brain synced: {len(BRAIN)} signatures")
+        except Exception as e:
+            results['brain'] = f"ERROR: {e}"
+
+        logger.warning(f"🔄 ADMIN: All data synced to MongoDB!")
+        return jsonify({
+            "status": "OK",
+            "message": "✅ Wszystkie dane zsynchronizowane do MongoDB!",
+            "results": results
+        })
+
+    except Exception as e:
+        logger.error(f"Error syncing to MongoDB: {e}")
         return jsonify({"status": "ERROR", "error": str(e)}), 500
 
 if __name__ == '__main__':
