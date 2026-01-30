@@ -675,13 +675,11 @@ def admin_panel():
                 for (const [signature, models] of Object.entries(data.brain_data)) {
                     if (count >= 50) break;
                     const row = document.createElement('tr');
-                    const modelsList = Object.entries(models).map(([m, c]) => `${m} (${c}x)`).join(', ');
+                    const modelsList = Object.entries(models).map(([m, c]) => m + ' (' + c + 'x)').join(', ');
                     const totalCount = Object.values(models).reduce((a, b) => a + b, 0);
-                    row.innerHTML = `
-                        <td><code style="font-size: 11px;">${signature.substring(0, 40)}...</code></td>
-                        <td>${modelsList}</td>
-                        <td><span class="badge badge-primary">${totalCount}</span></td>
-                    `;
+                    row.innerHTML = '<td><code style="font-size: 11px;">' + signature.substring(0, 40) + '...</code></td>' +
+                        '<td>' + modelsList + '</td>' +
+                        '<td><span class="badge badge-primary">' + totalCount + '</span></td>';
                     tbody.appendChild(row);
                     count++;
                 }
@@ -724,14 +722,12 @@ def admin_panel():
                 progress.style.display = 'none';
 
                 if (data.status === 'OK') {
-                    result.innerHTML = `
-                        <div class="alert alert-success">
-                            <strong>✅ ${data.message}</strong><br>
-                            • Nowe modele: <strong>${data.new_models}</strong><br>
-                            • Zaktualizowane: <strong>${data.updated_models}</strong><br>
-                            • Łącznie: <strong>${data.total_models}</strong>
-                        </div>
-                    `;
+                    result.innerHTML = '<div class="alert alert-success">' +
+                        '<strong>✅ ' + data.message + '</strong><br>' +
+                        '• Nowe modele: <strong>' + data.new_models + '</strong><br>' +
+                        '• Zaktualizowane: <strong>' + data.updated_models + '</strong><br>' +
+                        '• Łącznie: <strong>' + data.total_models + '</strong>' +
+                        '</div>';
                     result.style.display = 'block';
                     loadBrainData();
                 } else {
@@ -739,11 +735,9 @@ def admin_panel():
                 }
             } catch (e) {
                 progress.style.display = 'none';
-                result.innerHTML = `
-                    <div class="alert alert-info">
-                        <strong>❌ Błąd:</strong> ${e.message}
-                    </div>
-                `;
+                result.innerHTML = '<div class="alert alert-info">' +
+                    '<strong>❌ Błąd:</strong> ' + e.message +
+                    '</div>';
                 result.style.display = 'block';
             } finally {
                 btn.disabled = false;
@@ -759,9 +753,10 @@ def admin_panel():
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `shark_models_${new Date().toISOString().split('T')[0]}.json`;
+                const today = new Date().toISOString().split('T')[0];
+                a.download = 'shark_models_' + today + '.json';
                 a.click();
-                alert(`✅ Wyeksportowano ${data.models_count} modeli!`);
+                alert('✅ Wyeksportowano ' + data.models_count + ' modeli!');
             } catch (e) {
                 alert('Błąd: ' + e.message);
             }
