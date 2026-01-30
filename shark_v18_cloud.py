@@ -311,7 +311,14 @@ def parse_device_from_ua(ua):
     return None
 
 def find_top_3_matches(width, height, refresh_rate, gpu, dpr, ram, cores):
-    """Find top 3 best matching models using Weighted Scoring Algorithm with OS Segmentation."""
+    """
+    Find top 3 best matching models using Weighted Scoring Algorithm with OS Segmentation.
+
+    TESTOWANIE:
+    - Chrome DevTools (F12) → Tryb responsywny → Edit → Dodaj własne urządzenie
+    - Ustaw User Agent, DPR, viewport - możesz symulować dowolny telefon
+    - Sprawdź logi w konsoli serwera, aby zobaczyć szczegóły punktacji
+    """
     # Baza heurystyczna - SPRAWDZONE PARAMETRY z rzeczywistych urządzeń
     HEURISTIC_DB = {
         # iPhone - SPRAWDZONE (z JSON)
@@ -352,8 +359,18 @@ def find_top_3_matches(width, height, refresh_rate, gpu, dpr, ram, cores):
         reasons = []
 
         # 1. GPU (Waga: 40 Android / 0 iOS)
+        # UWAGA: Normalizacja GPU - różne przeglądarki zwracają różne formaty
+        # "Adreno (TM) 740" vs "Adreno 740 @ 680 MHz" - szukamy części wspólnej
         if not is_ios and specs["gpu"] and gpu_lower:
-            if specs["gpu"] in gpu_lower or any(part in gpu_lower for part in specs["gpu"].split()):
+            spec_gpu_lower = specs["gpu"].lower()
+            # Wyciągnij kluczowe słowa (np. "adreno 740" → ["adreno", "740"])
+            spec_gpu_parts = spec_gpu_lower.replace("(tm)", "").replace("@", " ").split()
+            # Sprawdź czy wszystkie kluczowe części są w GPU użytkownika
+            if all(part in gpu_lower for part in spec_gpu_parts if len(part) > 2):
+                score += 40
+                reasons.append(f"GPU: {specs['gpu']}")
+            # Fallback: prosta zawartość
+            elif spec_gpu_lower in gpu_lower:
                 score += 40
                 reasons.append(f"GPU: {specs['gpu']}")
 
@@ -391,10 +408,12 @@ def find_top_3_matches(width, height, refresh_rate, gpu, dpr, ram, cores):
                 score -= 10  # Kara za niezgodność (np. iPhone 16 vs 15 Pro)
 
         # 6. RAM (Waga: 5 Android / 0 iOS) - słaby sygnał
+        # UWAGA: navigator.deviceMemory zaokrągla wartości (12GB → 8GB)
         if not is_ios and ram > 0 and specs["ram"] > 0:
-            if specs["ram"] == ram:
+            # Użyj >= zamiast == bo Chrome zaokrągla RAM w dół
+            if ram >= specs["ram"] or abs(specs["ram"] - ram) <= 2:
                 score += 5
-                reasons.append(f"RAM: {specs['ram']}GB")
+                reasons.append(f"RAM: ~{specs['ram']}GB")
 
         if score > 0:
             matches.append({
@@ -406,9 +425,15 @@ def find_top_3_matches(width, height, refresh_rate, gpu, dpr, ram, cores):
     # Sortuj po confidence i zwróć top 3
     matches.sort(key=lambda x: x["confidence"], reverse=True)
 
-    # Loguj top 3
+    # Loguj top 3 z PEŁNYMI szczegółami punktacji
+    logger.info(f"🏆 TOP 3 MATCHES (z {len(matches)} kandydatów):")
     for i, match in enumerate(matches[:3], 1):
-        logger.info(f"  #{i}: {match['model']} - {match['confidence']}% ({', '.join(match['reasons'])})")
+        reasons_str = ', '.join(match['reasons']) if match['reasons'] else 'brak dopasowań'
+        logger.info(f"  #{i}: {match['model']} - {match['confidence']}% | Powody: {reasons_str}")
+
+    # Jeśli nie ma dopasowań, zaloguj to
+    if not matches:
+        logger.warning(f"⚠️ BRAK DOPASOWAŃ! Parametry: W={width}, H={height}, DPR={dpr}, RAM={ram}, Hz={refresh_rate}, GPU={gpu[:30]}")
 
     return matches[:3]
 
