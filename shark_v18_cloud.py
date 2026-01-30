@@ -181,33 +181,36 @@ def load_data():
         logger.error(f"Error loading brain: {e}")
         BRAIN = {}
 
-    # 2. Ładowanie STATIC_IDENTIFIERS z MongoDB
+    # 2. Ładowanie STATIC_IDENTIFIERS z MongoDB (tylko jeśli istnieje w MongoDB)
     if USE_MONGODB:
         try:
             static_data = static_identifiers_collection.find_one({'_id': 'static_identifiers'})
             if static_data and 'data' in static_data:
-                STATIC_IDENTIFIERS = static_data['data']
-                logger.info(f"✅ Static Identifiers loaded from MongoDB: {len(STATIC_IDENTIFIERS)} models")
+                # Merge z oryginalnymi danymi zamiast nadpisywać
+                STATIC_IDENTIFIERS.update(static_data['data'])
+                logger.info(f"✅ Static Identifiers merged from MongoDB: {len(STATIC_IDENTIFIERS)} models")
         except Exception as e:
             logger.warning(f"⚠️ Error loading Static Identifiers from MongoDB: {e}")
 
-    # 3. Ładowanie ANDROID_IDENTIFIERS z MongoDB
+    # 3. Ładowanie ANDROID_IDENTIFIERS z MongoDB (tylko jeśli istnieje w MongoDB)
     if USE_MONGODB:
         try:
             android_data = android_identifiers_collection.find_one({'_id': 'android_identifiers'})
             if android_data and 'data' in android_data:
-                ANDROID_IDENTIFIERS = android_data['data']
-                logger.info(f"✅ Android Identifiers loaded from MongoDB: {len(ANDROID_IDENTIFIERS)} models")
+                # Merge z oryginalnymi danymi zamiast nadpisywać
+                ANDROID_IDENTIFIERS.update(android_data['data'])
+                logger.info(f"✅ Android Identifiers merged from MongoDB: {len(ANDROID_IDENTIFIERS)} models")
         except Exception as e:
             logger.warning(f"⚠️ Error loading Android Identifiers from MongoDB: {e}")
 
-    # 4. Ładowanie ACCESSORY_CODES z MongoDB
+    # 4. Ładowanie ACCESSORY_CODES z MongoDB (tylko jeśli istnieje w MongoDB)
     if USE_MONGODB:
         try:
             accessory_data = accessory_codes_collection.find_one({'_id': 'accessory_codes'})
             if accessory_data and 'data' in accessory_data:
-                ACCESSORY_CODES = accessory_data['data']
-                logger.info(f"✅ Accessory Codes loaded from MongoDB: {len(ACCESSORY_CODES)} models")
+                # Merge z oryginalnymi danymi zamiast nadpisywać
+                ACCESSORY_CODES.update(accessory_data['data'])
+                logger.info(f"✅ Accessory Codes merged from MongoDB: {len(ACCESSORY_CODES)} models")
         except Exception as e:
             logger.warning(f"⚠️ Error loading Accessory Codes from MongoDB: {e}")
 
@@ -342,7 +345,7 @@ def find_top_3_matches(width, height, refresh_rate, gpu, dpr, ram, cores):
     # OS Segmentation - wykryj iOS vs Android
     is_ios = "apple" in gpu_lower or ram == -1
 
-    logger.info(f"🔍 Weighted Scoring - OS: {'iOS' if is_ios else 'Android'}, DPR: {dpr}, RAM: {ram}")
+    logger.info(f"🔍 Weighted Scoring - OS: {'iOS' if is_ios else 'Android'}, DPR: {dpr}, RAM: {ram}, GPU: {gpu}")
 
     for model_name, specs in HEURISTIC_DB.items():
         score = 0
@@ -483,6 +486,7 @@ def check_brain():
 
         # TYMCZASOWE LOGOWANIE - do debugowania Motoroli
         logger.info(f"🔍 FULL USER-AGENT: {user_agent}")
+        logger.info(f"📊 PARAMS: W={width}, H={height}, DPR={dpr}, RAM={ram}, Hz={refresh_rate}, GPU={gpu[:50]}")
 
         ua_id = parse_device_from_ua(user_agent)
 
