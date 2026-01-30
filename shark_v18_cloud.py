@@ -279,7 +279,9 @@ CLIENT_HTML = """
         </div>
         <div class="group-title" id="fixTitle" style="display:none">Korekta AI</div>
         <div class="ios-group" id="fixGroup" style="display:none; padding:15px;">
-            <select id="modelSelector"></select><button class="btn-fix" onclick="teachBrain()">Zapisz i Naucz AI</button>
+            <select id="modelSelector"></select>
+            <input type="text" id="customModel" placeholder="Lub wpisz nowy model (np. Motorola Edge 50)..." style="width:100%;padding:12px;border-radius:10px;border:1px solid #E9E9EB;font-size:16px;margin:10px 0;">
+            <button class="btn-fix" onclick="teachBrain()">✅ Zapisz i Naucz AI</button>
         </div>
     </div>
 <script>
@@ -354,7 +356,17 @@ CLIENT_HTML = """
         document.getElementById('codeScreenDetail').innerText=codes.screen || 'N/A';
         document.getElementById('codeCase').innerText=codes.case || 'N/A';
     }
-    async function teachBrain(){if(!currentScanData)return;currentScanData.model=document.getElementById('modelSelector').value;await fetch('/api/learn',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(currentScanData)});alert("✅ Nauczono!");showResult(currentScanData.model,100,true);}
+    async function teachBrain(){
+        if(!currentScanData)return;
+        const customModel=document.getElementById('customModel').value.trim();
+        const selectedModel=document.getElementById('modelSelector').value;
+        currentScanData.model=customModel || selectedModel;
+        if(!currentScanData.model){alert("⚠️ Wybierz lub wpisz model!");return;}
+        await fetch('/api/learn',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(currentScanData)});
+        alert("✅ Nauczono! Model: "+currentScanData.model);
+        showResult(currentScanData.model,100,true);
+        document.getElementById('customModel').value='';
+    }
 </script></body></html>
 """
 
