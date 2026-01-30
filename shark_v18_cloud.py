@@ -224,9 +224,114 @@ def parse_device_from_ua(ua):
         match_huawei = re.search(r'([A-Z]{3}-[A-Z0-9]{3,5})', ua)
         if match_huawei and ('HUAWEI' in ua.upper() or 'HONOR' in ua.upper()):
             return match_huawei.group(1)
+        # Motorola - wzorce: XT2xxx, XT21xx, moto g, edge, razr
+        match_motorola = re.search(r'(XT\d{4})', ua)
+        if match_motorola:
+            return match_motorola.group(1)
+        if 'motorola' in ua.lower() or 'moto' in ua.lower():
+            # Próbuj wyciągnąć nazwę modelu
+            match_moto_name = re.search(r'(moto [a-z0-9 ]+|edge [a-z0-9 ]+|razr [a-z0-9 ]+)', ua.lower())
+            if match_moto_name:
+                return match_moto_name.group(1).strip()
     except Exception as e:
         logger.error(f"Error parsing UA: {e}")
     return None
+
+def find_top_3_matches(width, height, refresh_rate, gpu):
+    """Find top 3 best matching models from EXTERNAL_DB based on heuristics."""
+    # Baza heurystyczna z typowymi parametrami urządzeń
+    HEURISTIC_DB = {
+        # iPhone
+        "iPhone 17 Pro Max": {"w": 440, "h": 956, "hz": 120, "gpu": "a19"},
+        "iPhone 17 Pro": {"w": 402, "h": 874, "hz": 120, "gpu": "a19"},
+        "iPhone 16 Pro Max": {"w": 440, "h": 956, "hz": 120, "gpu": "a18"},
+        "iPhone 16 Pro": {"w": 402, "h": 874, "hz": 120, "gpu": "a18"},
+        "iPhone 16": {"w": 393, "h": 852, "hz": 60, "gpu": "a18"},
+        "iPhone 16 Plus": {"w": 430, "h": 932, "hz": 60, "gpu": "a18"},
+        "iPhone 15 Pro Max": {"w": 430, "h": 932, "hz": 120, "gpu": "a17"},
+        "iPhone 15 Pro": {"w": 393, "h": 852, "hz": 120, "gpu": "a17"},
+        "iPhone 15": {"w": 393, "h": 852, "hz": 60, "gpu": "a16"},
+        "iPhone 15 Plus": {"w": 430, "h": 932, "hz": 60, "gpu": "a16"},
+        "iPhone 14 Pro Max": {"w": 430, "h": 932, "hz": 120, "gpu": "a16"},
+        "iPhone 14 Pro": {"w": 393, "h": 852, "hz": 120, "gpu": "a16"},
+        "iPhone 14": {"w": 390, "h": 844, "hz": 60, "gpu": "a15"},
+        "iPhone 13 Pro Max": {"w": 428, "h": 926, "hz": 120, "gpu": "a15"},
+        "iPhone 13": {"w": 390, "h": 844, "hz": 60, "gpu": "a15"},
+        "iPhone 12": {"w": 390, "h": 844, "hz": 60, "gpu": "a14"},
+        "iPhone 11": {"w": 414, "h": 896, "hz": 60, "gpu": "a13"},
+        # Samsung
+        "Samsung Galaxy S24 Ultra": {"w": 412, "h": 915, "hz": 120, "gpu": "adreno"},
+        "Samsung Galaxy S24+": {"w": 384, "h": 854, "hz": 120, "gpu": "adreno"},
+        "Samsung Galaxy S24": {"w": 360, "h": 780, "hz": 120, "gpu": "adreno"},
+        "Samsung Galaxy S23 Ultra": {"w": 412, "h": 915, "hz": 120, "gpu": "adreno"},
+        "Samsung Galaxy S23+": {"w": 384, "h": 854, "hz": 120, "gpu": "adreno"},
+        "Samsung Galaxy S23": {"w": 360, "h": 780, "hz": 120, "gpu": "adreno"},
+        "Samsung Galaxy S22 Ultra": {"w": 412, "h": 915, "hz": 120, "gpu": "adreno"},
+        "Samsung Galaxy S22": {"w": 360, "h": 780, "hz": 120, "gpu": "adreno"},
+        "Samsung Galaxy S21 Ultra": {"w": 412, "h": 915, "hz": 120, "gpu": "mali"},
+        "Samsung Galaxy S21": {"w": 360, "h": 780, "hz": 120, "gpu": "mali"},
+        "Samsung Galaxy A54": {"w": 412, "h": 914, "hz": 120, "gpu": "adreno"},
+        "Samsung Galaxy A53": {"w": 412, "h": 914, "hz": 120, "gpu": "adreno"},
+        # Google Pixel
+        "Google Pixel 8 Pro": {"w": 412, "h": 915, "hz": 120, "gpu": "mali"},
+        "Google Pixel 8": {"w": 412, "h": 915, "hz": 120, "gpu": "mali"},
+        "Google Pixel 7 Pro": {"w": 412, "h": 915, "hz": 120, "gpu": "mali"},
+        "Google Pixel 7": {"w": 412, "h": 915, "hz": 90, "gpu": "mali"},
+        "Google Pixel 6 Pro": {"w": 412, "h": 915, "hz": 120, "gpu": "mali"},
+        "Google Pixel 6": {"w": 412, "h": 915, "hz": 90, "gpu": "mali"},
+        # Xiaomi
+        "Xiaomi 14 Pro": {"w": 412, "h": 915, "hz": 120, "gpu": "adreno"},
+        "Xiaomi 13 Pro": {"w": 412, "h": 915, "hz": 120, "gpu": "adreno"},
+        "Xiaomi 12 Pro": {"w": 412, "h": 915, "hz": 120, "gpu": "adreno"},
+        # OnePlus
+        "OnePlus 12": {"w": 412, "h": 915, "hz": 120, "gpu": "adreno"},
+        "OnePlus 11": {"w": 412, "h": 915, "hz": 120, "gpu": "adreno"},
+        "OnePlus 10 Pro": {"w": 412, "h": 915, "hz": 120, "gpu": "adreno"},
+        # Motorola
+        "Motorola Edge 50 Pro": {"w": 412, "h": 915, "hz": 144, "gpu": "adreno"},
+        "Motorola Edge 50": {"w": 412, "h": 915, "hz": 120, "gpu": "adreno"},
+        "Motorola Edge 40 Pro": {"w": 412, "h": 915, "hz": 165, "gpu": "adreno"},
+        "Motorola Edge 40": {"w": 412, "h": 915, "hz": 144, "gpu": "adreno"},
+        "Motorola Edge 30 Ultra": {"w": 412, "h": 915, "hz": 144, "gpu": "adreno"},
+        "Motorola Moto G84": {"w": 412, "h": 915, "hz": 120, "gpu": "adreno"},
+        "Motorola Razr 40 Ultra": {"w": 412, "h": 915, "hz": 165, "gpu": "adreno"},
+    }
+
+    matches = []
+    gpu_lower = gpu.lower()
+
+    for model_name, specs in HEURISTIC_DB.items():
+        score = 0
+        reasons = []
+
+        # Dopasowanie rozdzielczości (50 punktów)
+        if abs(specs["w"] - width) <= 2 and abs(specs["h"] - height) <= 2:
+            score += 50
+            reasons.append(f"Rozdzielczość: {specs['w']}x{specs['h']}")
+        elif abs(specs["w"] - width) <= 10 and abs(specs["h"] - height) <= 10:
+            score += 30
+            reasons.append(f"Rozdzielczość ~{specs['w']}x{specs['h']}")
+
+        # Dopasowanie odświeżania (30 punktów)
+        if specs["hz"] == refresh_rate:
+            score += 30
+            reasons.append(f"Odświeżanie: {specs['hz']}Hz")
+
+        # Dopasowanie GPU (20 punktów)
+        if specs["gpu"] in gpu_lower or gpu_lower in specs["gpu"]:
+            score += 20
+            reasons.append(f"GPU: {specs['gpu']}")
+
+        if score > 0:
+            matches.append({
+                "model": model_name,
+                "confidence": min(score, 100),
+                "reasons": reasons
+            })
+
+    # Sortuj po confidence i zwróć top 3
+    matches.sort(key=lambda x: x["confidence"], reverse=True)
+    return matches[:3]
 
 app = Flask(__name__, template_folder='templates')
 CORS(app)
@@ -292,27 +397,44 @@ def check_brain():
         user_agent = d.get('userAgent', '')
         ua_id = parse_device_from_ua(user_agent)
 
+        detection_log = {
+            "ua_detected": ua_id,
+            "ua_full": user_agent[:100] + "..." if len(user_agent) > 100 else user_agent,
+            "fingerprint": f"{width}x{height} @ {refresh_rate}Hz, GPU: {gpu}",
+            "canvas_hash": canvas_hash
+        }
+
+        # Priorytet 1: User-Agent z dokładnym dopasowaniem w EXTERNAL_DB
         if ua_id:
-            model_name = EXTERNAL_DB.get(ua_id)
+            model_name = EXTERNAL_DB.get(ua_id) or STATIC_IDENTIFIERS.get(ua_id) or ANDROID_IDENTIFIERS.get(ua_id)
             if model_name:
                 logger.info(f"Device identified via UA_EXACT: {model_name}")
                 accessory_codes = ACCESSORY_CODES.get(model_name, {"screen": "N/A", "case": "N/A"})
+                detection_log["method"] = "UA_EXACT"
+                detection_log["matched_id"] = ua_id
                 return jsonify({
                     "found": True,
                     "model": model_name,
                     "confidence": 100,
                     "source": "UA_EXACT",
-                    "codes": accessory_codes
+                    "codes": accessory_codes,
+                    "detection_log": detection_log
                 })
+
+            # Priorytet 2: User-Agent wykryty, ale nie ma w bazie - zwróć surowy ID
             logger.info(f"Device identified via UA_RAW: {ua_id}")
+            detection_log["method"] = "UA_RAW"
+            detection_log["matched_id"] = ua_id
             return jsonify({
                 "found": True,
                 "model": ua_id,
-                "confidence": 95,
-                "source": "UA_RAW",
-                "codes": {"screen": "N/A", "case": "N/A"}
+                "confidence": 90,
+                "source": "UA_CODE",
+                "codes": {"screen": "N/A", "case": "N/A"},
+                "detection_log": detection_log
             })
 
+        # Priorytet 3: Baza AI (fingerprint)
         signature = f"{width}_{height}_{refresh_rate}_{gpu}_{canvas_hash}"
 
         if signature in BRAIN:
@@ -322,16 +444,39 @@ def check_brain():
             confidence = int((models[top_model] / total_count) * 100)
             logger.info(f"Device identified via AI: {top_model} ({confidence}% confidence)")
             accessory_codes = ACCESSORY_CODES.get(top_model, {"screen": "N/A", "case": "N/A"})
+            detection_log["method"] = "AI_FINGERPRINT"
+            detection_log["signature"] = signature
+            detection_log["ai_models"] = dict(models)
             return jsonify({
                 "found": True,
                 "model": top_model,
                 "confidence": confidence,
                 "source": "AI",
-                "codes": accessory_codes
+                "codes": accessory_codes,
+                "detection_log": detection_log
+            })
+
+        # Priorytet 4: Heurystyka - znajdź 3 najlepiej dopasowane modele z całej bazy
+        suggestions = find_top_3_matches(width, height, refresh_rate, gpu)
+
+        if suggestions:
+            detection_log["method"] = "HEURISTIC_TOP3"
+            detection_log["suggestions"] = suggestions
+            logger.info(f"Device not found - suggesting top 3 matches")
+            return jsonify({
+                "found": False,
+                "suggestions": suggestions,
+                "codes": {"screen": "N/A", "case": "N/A"},
+                "detection_log": detection_log
             })
 
         logger.info("Device not found in brain")
-        return jsonify({"found": False, "codes": {"screen": "N/A", "case": "N/A"}})
+        detection_log["method"] = "NOT_FOUND"
+        return jsonify({
+            "found": False,
+            "codes": {"screen": "N/A", "case": "N/A"},
+            "detection_log": detection_log
+        })
 
     except Exception as e:
         logger.error(f"Error in check_brain: {e}", exc_info=True)
@@ -417,6 +562,8 @@ def admin_get_brain():
         return jsonify({
             "brain_count": len(BRAIN),
             "unique_models": len(unique_models),
+            "external_db_count": len(EXTERNAL_DB),
+            "total_models": len(unique_models) + len(EXTERNAL_DB),
             "storage_type": "MongoDB" if USE_MONGODB else "JSON",
             "brain_data": BRAIN
         })

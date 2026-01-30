@@ -109,8 +109,8 @@
                 const data = await res.json();
 
                 document.getElementById('brainCount').innerText = data.brain_count;
-                document.getElementById('modelCount').innerText = data.unique_models;
-                document.getElementById('storageType').innerText = data.storage_type;
+                document.getElementById('modelCount').innerText = data.total_models || data.unique_models;
+                document.getElementById('storageType').innerText = data.storage_type + ' (AI: ' + data.unique_models + ', Matomo: ' + (data.external_db_count || 0) + ')';
 
                 const tbody = document.getElementById('brainTableBody');
                 tbody.innerHTML = '';
