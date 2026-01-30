@@ -1,0 +1,123 @@
+═══════════════════════════════════════════════════════════════
+    🦈 SHARK v18 - SZYBKI START
+═══════════════════════════════════════════════════════════════
+
+📋 KROK 1: INSTALACJA
+═══════════════════════════════════════════════════════════════
+
+1. Zainstaluj Python 3.8+ (jeśli nie masz):
+   https://www.python.org/downloads/
+
+2. Otwórz terminal/PowerShell w tym folderze
+
+3. Zainstaluj zależności:
+
+   pip install -r requirements.txt
+
+═══════════════════════════════════════════════════════════════
+🚀 KROK 2: URUCHOMIENIE
+═══════════════════════════════════════════════════════════════
+
+W terminalu wpisz:
+
+   python shark_v18.py
+
+Zobaczysz:
+   ============================================================
+   SHARK v18 FINAL | URL: https://192.168.1.100:5000
+   Brain signatures: 0
+   Max signatures: 10000
+   ============================================================
+
+   [QR CODE]
+
+═══════════════════════════════════════════════════════════════
+📱 KROK 3: POŁĄCZ TELEFON
+═══════════════════════════════════════════════════════════════
+
+OPCJA A: Zeskanuj QR Code
+   - Otwórz aparat w telefonie
+   - Zeskanuj kod QR z ekranu
+   - Kliknij link
+
+OPCJA B: Wpisz adres ręcznie
+   - Otwórz przeglądarkę w telefonie
+   - Wpisz adres z ekranu (np. https://192.168.1.100:5000)
+   - Zaakceptuj certyfikat ("Zaawansowane" → "Przejdź")
+
+═══════════════════════════════════════════════════════════════
+🎯 KROK 4: SKANUJ TELEFON
+═══════════════════════════════════════════════════════════════
+
+1. Kliknij "🚀 Rozpocznij Skanowanie"
+2. Poczekaj 2-3 sekundy
+3. System pokaże:
+   - Model telefonu
+   - Kod szybki (np. SA1U1)
+   - Kody akcesoriów (szkło + etui)
+
+═══════════════════════════════════════════════════════════════
+📚 DOKUMENTACJA
+═══════════════════════════════════════════════════════════════
+
+README.md               - Pełna dokumentacja techniczna
+INSTRUKCJA_OBSLUGI.md   - Instrukcja dla użytkowników
+INSTALACJA.md           - Szczegółowy przewodnik instalacji
+KODY_AKCESORIOW.txt     - Lista wszystkich kodów
+CHANGELOG.md            - Historia zmian
+
+═══════════════════════════════════════════════════════════════
+🆘 POMOC
+═══════════════════════════════════════════════════════════════
+
+Problem: Port 5000 zajęty
+Rozwiązanie: Zmień port w shark_v18.py (linia 498)
+
+Problem: Firewall blokuje
+Rozwiązanie: Dodaj wyjątek dla Python/port 5000
+
+Problem: Telefon nie łączy się
+Rozwiązanie: Upewnij się że telefon i PC są w tej samej sieci WiFi
+
+═══════════════════════════════════════════════════════════════
+✨ OBSŁUGIWANE URZĄDZENIA (80+)
+═══════════════════════════════════════════════════════════════
+
+✅ iPhone (27 modeli)
+   - iPhone 11 → iPhone 17 Pro Max
+
+✅ Samsung Galaxy (30+ modeli)
+   - S20 → S24 Ultra
+   - A33 → A54
+   - Z Fold/Flip 3/4/5
+
+✅ Google Pixel (7 modeli)
+   - Pixel 5 → Pixel 8 Pro
+
+✅ Xiaomi (9 modeli)
+   - Mi 10T Pro → 14 Pro
+
+✅ OnePlus (7 modeli)
+   - OnePlus 8 → 12
+
+✅ Huawei (5 modeli)
+   - P30 → P40 Pro
+
+═══════════════════════════════════════════════════════════════
+🎓 PRZYKŁAD UŻYCIA
+═══════════════════════════════════════════════════════════════
+
+Klient: "Potrzebuję szkło na Samsung S24 Ultra"
+
+1. Klient skanuje telefon
+2. System pokazuje: Samsung Galaxy S24 Ultra
+3. Kod szybki: SA1U1
+4. Podajesz szkło SA1U1 + etui SA1U2
+
+Czas: 10 sekund! ⚡
+
+═══════════════════════════════════════════════════════════════
+
+SHARK v18 - Inteligentne rozpoznawanie urządzeń mobilnych 🦈📱
+
+═══════════════════════════════════════════════════════════════
