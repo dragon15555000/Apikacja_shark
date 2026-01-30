@@ -515,6 +515,339 @@ def learn():
         logger.error(f"Error in learn: {e}", exc_info=True)
         return jsonify({"error": "Internal server error"}), 500
 
+# ============================================================================
+# PANEL ADMINISTRACYJNY - Zarządzanie Bazą Danych
+# ============================================================================
+
+@app.route('/admin')
+def admin_panel():
+    """Panel administracyjny do zarządzania bazą AI Brain i kodami akcesoriów."""
+    return """
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SHARK v18 - Panel Administracyjny</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 12px; margin-bottom: 30px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+        .header h1 { font-size: 32px; margin-bottom: 10px; }
+        .header p { opacity: 0.9; font-size: 14px; }
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .stat-card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .stat-card h3 { font-size: 14px; color: #666; margin-bottom: 10px; text-transform: uppercase; }
+        .stat-card .value { font-size: 36px; font-weight: 700; color: #667eea; }
+        .section { background: white; padding: 25px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .section h2 { font-size: 20px; margin-bottom: 20px; color: #333; border-bottom: 2px solid #667eea; padding-bottom: 10px; }
+        .btn { background: #667eea; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.3s; }
+        .btn:hover { background: #5568d3; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3); }
+        .btn-danger { background: #e74c3c; }
+        .btn-danger:hover { background: #c0392b; }
+        .btn-success { background: #27ae60; }
+        .btn-success:hover { background: #229954; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; }
+        th { background: #f8f9fa; font-weight: 600; color: #333; }
+        tr:hover { background: #f8f9fa; }
+        .badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+        .badge-primary { background: #e3f2fd; color: #1976d2; }
+        input[type="text"] { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; margin-bottom: 10px; }
+        .alert { padding: 15px; border-radius: 6px; margin-bottom: 20px; }
+        .alert-info { background: #e3f2fd; color: #1976d2; border-left: 4px solid #1976d2; }
+        .alert-success { background: #e8f5e9; color: #388e3c; border-left: 4px solid #388e3c; }
+        .scrollable { max-height: 400px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🦈 SHARK v18 - Panel Administracyjny</h1>
+            <p>Zarządzanie bazą AI Brain i importem modeli</p>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <h3>📊 Sygnatur AI</h3>
+                <div class="value" id="brainCount">-</div>
+            </div>
+            <div class="stat-card">
+                <h3>📱 Modeli w Bazie</h3>
+                <div class="value" id="modelCount">-</div>
+            </div>
+            <div class="stat-card">
+                <h3>💾 Typ Bazy</h3>
+                <div class="value" id="storageType" style="font-size: 20px;">-</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>🌐 Import Modeli z Matomo Device Detector</h2>
+            <div class="alert alert-success">
+                <strong>🚀 NOWE!</strong> Automatycznie importuj 1000+ modeli telefonów z bazy Matomo Device Detector!
+            </div>
+            <button class="btn btn-success" onclick="importMatomoModels()" id="matomoImportBtn">
+                🌐 Importuj Modele z Matomo (1000+ modeli)
+            </button>
+            <button class="btn" onclick="exportModels()" style="margin-left: 10px;">📥 Eksportuj Bazę Modeli</button>
+
+            <div id="matomoProgress" style="display: none; margin-top: 20px;">
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; border-left: 4px solid #667eea;">
+                    <strong>⏳ Importowanie...</strong>
+                    <p style="margin: 10px 0 0 0; color: #666;">Pobieranie danych z Matomo Device Detector. To może potrwać 10-30 sekund...</p>
+                </div>
+            </div>
+
+            <div id="matomoResult" style="display: none; margin-top: 20px;"></div>
+        </div>
+
+        <div class="section">
+            <h2>🧠 Baza AI Brain - Nauczonych Modeli</h2>
+            <div class="alert alert-info">
+                <strong>ℹ️ Info:</strong> Baza AI przechowuje fingerprint urządzeń i przypisane do nich modele.
+            </div>
+            <button class="btn" onclick="loadBrainData()">🔄 Odśwież Dane</button>
+            <button class="btn btn-danger" onclick="clearBrain()" style="margin-left: 10px;">🗑️ Wyczyść Bazę AI</button>
+            <div class="scrollable" style="margin-top: 20px;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Sygnatura</th>
+                            <th>Modele</th>
+                            <th>Wystąpienia</th>
+                        </tr>
+                    </thead>
+                    <tbody id="brainTableBody">
+                        <tr><td colspan="3" style="text-align: center; color: #999;">Ładowanie...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function loadBrainData() {
+            try {
+                const res = await fetch('/admin/api/brain');
+                const data = await res.json();
+
+                document.getElementById('brainCount').innerText = data.brain_count;
+                document.getElementById('modelCount').innerText = data.unique_models;
+                document.getElementById('storageType').innerText = data.storage_type;
+
+                const tbody = document.getElementById('brainTableBody');
+                tbody.innerHTML = '';
+
+                if (data.brain_count === 0) {
+                    tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: #999;">Brak danych</td></tr>';
+                    return;
+                }
+
+                let count = 0;
+                for (const [signature, models] of Object.entries(data.brain_data)) {
+                    if (count >= 50) break;
+                    const row = document.createElement('tr');
+                    const modelsList = Object.entries(models).map(([m, c]) => `${m} (${c}x)`).join(', ');
+                    const totalCount = Object.values(models).reduce((a, b) => a + b, 0);
+                    row.innerHTML = `
+                        <td><code style="font-size: 11px;">${signature.substring(0, 40)}...</code></td>
+                        <td>${modelsList}</td>
+                        <td><span class="badge badge-primary">${totalCount}</span></td>
+                    `;
+                    tbody.appendChild(row);
+                    count++;
+                }
+            } catch (e) {
+                alert('Błąd: ' + e.message);
+            }
+        }
+
+        async function clearBrain() {
+            if (!confirm('⚠️ Wyczyścić CAŁĄ bazę AI?')) return;
+            try {
+                const res = await fetch('/admin/api/brain/clear', { method: 'POST' });
+                const data = await res.json();
+                alert(data.message);
+                loadBrainData();
+            } catch (e) {
+                alert('Błąd: ' + e.message);
+            }
+        }
+
+        async function importMatomoModels() {
+            if (!confirm('🌐 Importować 1000+ modeli z Matomo?\n\nTo może potrwać 10-30 sekund.')) return;
+
+            const btn = document.getElementById('matomoImportBtn');
+            const progress = document.getElementById('matomoProgress');
+            const result = document.getElementById('matomoResult');
+
+            btn.disabled = true;
+            btn.innerText = '⏳ Importowanie...';
+            progress.style.display = 'block';
+            result.style.display = 'none';
+
+            try {
+                const res = await fetch('/admin/api/models/import-matomo', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const data = await res.json();
+
+                progress.style.display = 'none';
+
+                if (data.status === 'OK') {
+                    result.innerHTML = `
+                        <div class="alert alert-success">
+                            <strong>✅ ${data.message}</strong><br>
+                            • Nowe modele: <strong>${data.new_models}</strong><br>
+                            • Zaktualizowane: <strong>${data.updated_models}</strong><br>
+                            • Łącznie: <strong>${data.total_models}</strong>
+                        </div>
+                    `;
+                    result.style.display = 'block';
+                    loadBrainData();
+                } else {
+                    throw new Error(data.error || 'Nieznany błąd');
+                }
+            } catch (e) {
+                progress.style.display = 'none';
+                result.innerHTML = `
+                    <div class="alert alert-info">
+                        <strong>❌ Błąd:</strong> ${e.message}
+                    </div>
+                `;
+                result.style.display = 'block';
+            } finally {
+                btn.disabled = false;
+                btn.innerText = '🌐 Importuj Modele z Matomo (1000+ modeli)';
+            }
+        }
+
+        async function exportModels() {
+            try {
+                const res = await fetch('/admin/api/models/export');
+                const data = await res.json();
+                const blob = new Blob([JSON.stringify(data.models_data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `shark_models_${new Date().toISOString().split('T')[0]}.json`;
+                a.click();
+                alert(`✅ Wyeksportowano ${data.models_count} modeli!`);
+            } catch (e) {
+                alert('Błąd: ' + e.message);
+            }
+        }
+
+        loadBrainData();
+    </script>
+</body>
+</html>
+"""
+
+@app.route('/admin/api/brain')
+def admin_get_brain():
+    """API: Pobierz dane z bazy AI Brain."""
+    try:
+        unique_models = set()
+        for models in BRAIN.values():
+            unique_models.update(models.keys())
+
+        return jsonify({
+            "brain_count": len(BRAIN),
+            "unique_models": len(unique_models),
+            "storage_type": "MongoDB" if USE_MONGODB else "JSON",
+            "brain_data": BRAIN
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/admin/api/brain/clear', methods=['POST'])
+def admin_clear_brain():
+    """API: Wyczyść całą bazę AI Brain."""
+    try:
+        global BRAIN
+        BRAIN = {}
+        save_brain()
+        logger.warning("⚠️ ADMIN: Brain database cleared!")
+        return jsonify({"status": "OK", "message": "✅ Baza AI wyczyszczona!"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/admin/api/models/import-matomo', methods=['POST'])
+def admin_import_matomo_models():
+    """API: Importuj modele z Matomo Device Detector do EXTERNAL_DB."""
+    try:
+        import requests
+        import yaml
+
+        MATOMO_URL = "https://raw.githubusercontent.com/matomo-org/device-detector/master/regexes/device/mobiles.yml"
+
+        logger.info("📥 Pobieranie danych z Matomo...")
+        response = requests.get(MATOMO_URL, timeout=30)
+        response.raise_for_status()
+        devices_data = yaml.safe_load(response.text)
+
+        global EXTERNAL_DB
+        new_models = 0
+        updated_models = 0
+
+        for brand_data in devices_data:
+            brand = brand_data.get('brand', 'Unknown')
+            models = brand_data.get('models', [])
+
+            for model_entry in models:
+                model_name = model_entry.get('model')
+                regex = model_entry.get('regex', '')
+
+                if not model_name or not regex:
+                    continue
+
+                device_id = regex.replace('[', '').replace(']', '').replace('?', '')
+                device_id = device_id.replace('(', '').replace(')', '').replace('|', '')
+                device_id = device_id.split()[0] if ' ' in device_id else device_id
+                device_id = device_id[:20]
+
+                if not device_id:
+                    continue
+
+                full_name = f"{brand} {model_name}" if brand.lower() not in model_name.lower() else model_name
+
+                if device_id not in EXTERNAL_DB:
+                    EXTERNAL_DB[device_id] = full_name
+                    new_models += 1
+                elif EXTERNAL_DB[device_id] != full_name:
+                    EXTERNAL_DB[device_id] = full_name
+                    updated_models += 1
+
+        logger.warning(f"⚠️ ADMIN: Matomo imported! New: {new_models}, Updated: {updated_models}")
+
+        return jsonify({
+            "status": "OK",
+            "message": f"✅ Zaimportowano modele z Matomo!",
+            "new_models": new_models,
+            "updated_models": updated_models,
+            "total_models": len(EXTERNAL_DB)
+        })
+
+    except Exception as e:
+        logger.error(f"❌ Błąd importu Matomo: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/admin/api/models/export')
+def admin_export_models():
+    """API: Eksportuj bazę EXTERNAL_DB do JSON."""
+    try:
+        return jsonify({
+            "status": "OK",
+            "models_count": len(EXTERNAL_DB),
+            "models_data": EXTERNAL_DB
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 if __name__ == '__main__':
     load_data()
 
