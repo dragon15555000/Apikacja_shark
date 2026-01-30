@@ -333,7 +333,11 @@
 
                     statusDiv.innerHTML = '<span style="color: #27ae60;">✅ ' + data.message + details + '</span>';
                 } else {
-                    statusDiv.innerHTML = '<span style="color: #e74c3c;">❌ Błąd: ' + data.error + '</span>';
+                    let errorMsg = '<span style="color: #e74c3c;">❌ Błąd: ' + data.error + '</span>';
+                    if (data.help) {
+                        errorMsg += '<br><br><span style="color: #f39c12;">💡 ' + data.help + '</span>';
+                    }
+                    statusDiv.innerHTML = errorMsg;
                 }
             } catch (e) {
                 statusDiv.innerHTML = '<span style="color: #e74c3c;">❌ Błąd: ' + e.message + '</span>';
