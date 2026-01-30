@@ -10,6 +10,17 @@ from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
+# Ładowanie zmiennych środowiskowych z pliku .env (jeśli istnieje)
+if os.path.exists('.env'):
+    print("📄 Loading environment variables from .env file...")
+    with open('.env', 'r', encoding='utf-8') as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith('#') and '=' in line:
+                key, value = line.split('=', 1)
+                os.environ[key.strip()] = value.strip()
+    print("✅ Environment variables loaded from .env")
+
 # MongoDB (opcjonalnie)
 try:
     from pymongo import MongoClient
@@ -1023,7 +1034,12 @@ def admin_sync_to_mongodb():
     """API: Synchronizuj wszystkie dane do MongoDB."""
     try:
         if not USE_MONGODB:
-            return jsonify({"status": "ERROR", "error": "MongoDB not available"}), 500
+            error_msg = "MongoDB nie jest dostępne. Ustaw zmienne środowiskowe MONGODB_URI i MONGODB_DB."
+            return jsonify({
+                "status": "ERROR",
+                "error": error_msg,
+                "help": "Lokalnie: ustaw zmienne w pliku .env lub systemowo. Na Render: zmienne są już ustawione."
+            }), 500
 
         results = {}
 
