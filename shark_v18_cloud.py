@@ -161,7 +161,21 @@ def load_data():
         logger.error(f"Error loading brain: {e}")
         BRAIN = {}
 
+    # Załaduj bazę modeli z pliku JSON (jeśli istnieje) lub użyj domyślnych
     EXTERNAL_DB = {**STATIC_IDENTIFIERS, **ANDROID_IDENTIFIERS}
+
+    external_db_file = 'shark_external_db.json'
+    if os.path.exists(external_db_file):
+        try:
+            with open(external_db_file, 'r', encoding='utf-8') as f:
+                loaded_db = json.load(f)
+                EXTERNAL_DB.update(loaded_db)
+                logger.info(f"✅ External DB loaded: {len(EXTERNAL_DB)} models")
+        except Exception as e:
+            logger.error(f"Error loading external DB: {e}")
+    else:
+        logger.warning(f"⚠️ External DB file not found. Using default models only ({len(EXTERNAL_DB)} models)")
+        logger.info("💡 Run 'python setup_database.py' to import 1000+ models from Matomo")
 
 def save_brain():
     """Save brain data to MongoDB or JSON file."""
@@ -806,11 +820,20 @@ def admin_import_matomo_models():
         new_models = 0
         updated_models = 0
 
-        for brand_data in devices_data:
-            brand = brand_data.get('brand', 'Unknown')
-            models = brand_data.get('models', [])
+        # Matomo YAML ma strukturę: {brand_name: {models: [...], device: ..., regex: ...}}
+        for brand, brand_info in devices_data.items():
+            if not isinstance(brand_info, dict):
+                continue
+
+            models = brand_info.get('models', [])
+
+            if not isinstance(models, list):
+                continue
 
             for model_entry in models:
+                if not isinstance(model_entry, dict):
+                    continue
+
                 model_name = model_entry.get('model')
                 regex = model_entry.get('regex', '')
 
@@ -819,13 +842,21 @@ def admin_import_matomo_models():
 
                 device_id = regex.replace('[', '').replace(']', '').replace('?', '')
                 device_id = device_id.replace('(', '').replace(')', '').replace('|', '')
+                device_id = device_id.replace('\\', '').replace('+', '').replace('.', '')
                 device_id = device_id.split()[0] if ' ' in device_id else device_id
-                device_id = device_id[:20]
+                device_id = device_id[:20].strip()
 
-                if not device_id:
+                if not device_id or len(device_id) < 2:
                     continue
 
                 full_name = f"{brand} {model_name}" if brand.lower() not in model_name.lower() else model_name
+
+                # Unikaj duplikatów - jeśli klucz już istnieje, dodaj suffix
+                original_device_id = device_id
+                counter = 1
+                while device_id in EXTERNAL_DB and EXTERNAL_DB[device_id] != full_name:
+                    device_id = f"{original_device_id}_{counter}"
+                    counter += 1
 
                 if device_id not in EXTERNAL_DB:
                     EXTERNAL_DB[device_id] = full_name
@@ -834,7 +865,13 @@ def admin_import_matomo_models():
                     EXTERNAL_DB[device_id] = full_name
                     updated_models += 1
 
+        # Zapisz do pliku JSON, żeby przetrwało restart
+        external_db_file = 'shark_external_db.json'
+        with open(external_db_file, 'w', encoding='utf-8') as f:
+            json.dump(EXTERNAL_DB, f, indent=2, ensure_ascii=False)
+
         logger.warning(f"⚠️ ADMIN: Matomo imported! New: {new_models}, Updated: {updated_models}")
+        logger.info(f"💾 Saved to {external_db_file}")
 
         return jsonify({
             "status": "OK",
