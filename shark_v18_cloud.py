@@ -237,90 +237,91 @@ def parse_device_from_ua(ua):
         logger.error(f"Error parsing UA: {e}")
     return None
 
-def find_top_3_matches(width, height, refresh_rate, gpu):
-    """Find top 3 best matching models from EXTERNAL_DB based on heuristics."""
-    # Baza heurystyczna z typowymi parametrami urządzeń
+def find_top_3_matches(width, height, refresh_rate, gpu, dpr, ram, cores):
+    """Find top 3 best matching models using Weighted Scoring Algorithm with OS Segmentation."""
+    # Baza heurystyczna - SPRAWDZONE PARAMETRY z rzeczywistych urządzeń
     HEURISTIC_DB = {
-        # iPhone
-        "iPhone 17 Pro Max": {"w": 440, "h": 956, "hz": 120, "gpu": "a19"},
-        "iPhone 17 Pro": {"w": 402, "h": 874, "hz": 120, "gpu": "a19"},
-        "iPhone 16 Pro Max": {"w": 440, "h": 956, "hz": 120, "gpu": "a18"},
-        "iPhone 16 Pro": {"w": 402, "h": 874, "hz": 120, "gpu": "a18"},
-        "iPhone 16": {"w": 393, "h": 852, "hz": 60, "gpu": "a18"},
-        "iPhone 16 Plus": {"w": 430, "h": 932, "hz": 60, "gpu": "a18"},
-        "iPhone 15 Pro Max": {"w": 430, "h": 932, "hz": 120, "gpu": "a17"},
-        "iPhone 15 Pro": {"w": 393, "h": 852, "hz": 120, "gpu": "a17"},
-        "iPhone 15": {"w": 393, "h": 852, "hz": 60, "gpu": "a16"},
-        "iPhone 15 Plus": {"w": 430, "h": 932, "hz": 60, "gpu": "a16"},
-        "iPhone 14 Pro Max": {"w": 430, "h": 932, "hz": 120, "gpu": "a16"},
-        "iPhone 14 Pro": {"w": 393, "h": 852, "hz": 120, "gpu": "a16"},
-        "iPhone 14": {"w": 390, "h": 844, "hz": 60, "gpu": "a15"},
-        "iPhone 13 Pro Max": {"w": 428, "h": 926, "hz": 120, "gpu": "a15"},
-        "iPhone 13": {"w": 390, "h": 844, "hz": 60, "gpu": "a15"},
-        "iPhone 12": {"w": 390, "h": 844, "hz": 60, "gpu": "a14"},
-        "iPhone 11": {"w": 414, "h": 896, "hz": 60, "gpu": "a13"},
-        # Samsung
-        "Samsung Galaxy S24 Ultra": {"w": 412, "h": 915, "hz": 120, "gpu": "adreno"},
-        "Samsung Galaxy S24+": {"w": 384, "h": 854, "hz": 120, "gpu": "adreno"},
-        "Samsung Galaxy S24": {"w": 360, "h": 780, "hz": 120, "gpu": "adreno"},
-        "Samsung Galaxy S23 Ultra": {"w": 412, "h": 915, "hz": 120, "gpu": "adreno"},
-        "Samsung Galaxy S23+": {"w": 384, "h": 854, "hz": 120, "gpu": "adreno"},
-        "Samsung Galaxy S23": {"w": 360, "h": 780, "hz": 120, "gpu": "adreno"},
-        "Samsung Galaxy S22 Ultra": {"w": 412, "h": 915, "hz": 120, "gpu": "adreno"},
-        "Samsung Galaxy S22": {"w": 360, "h": 780, "hz": 120, "gpu": "adreno"},
-        "Samsung Galaxy S21 Ultra": {"w": 412, "h": 915, "hz": 120, "gpu": "mali"},
-        "Samsung Galaxy S21": {"w": 360, "h": 780, "hz": 120, "gpu": "mali"},
-        "Samsung Galaxy A54": {"w": 412, "h": 914, "hz": 120, "gpu": "adreno"},
-        "Samsung Galaxy A53": {"w": 412, "h": 914, "hz": 120, "gpu": "adreno"},
-        # Google Pixel
-        "Google Pixel 8 Pro": {"w": 412, "h": 915, "hz": 120, "gpu": "mali"},
-        "Google Pixel 8": {"w": 412, "h": 915, "hz": 120, "gpu": "mali"},
-        "Google Pixel 7 Pro": {"w": 412, "h": 915, "hz": 120, "gpu": "mali"},
-        "Google Pixel 7": {"w": 412, "h": 915, "hz": 90, "gpu": "mali"},
-        "Google Pixel 6 Pro": {"w": 412, "h": 915, "hz": 120, "gpu": "mali"},
-        "Google Pixel 6": {"w": 412, "h": 915, "hz": 90, "gpu": "mali"},
-        # Xiaomi
-        "Xiaomi 14 Pro": {"w": 412, "h": 915, "hz": 120, "gpu": "adreno"},
-        "Xiaomi 13 Pro": {"w": 412, "h": 915, "hz": 120, "gpu": "adreno"},
-        "Xiaomi 12 Pro": {"w": 412, "h": 915, "hz": 120, "gpu": "adreno"},
-        # OnePlus
-        "OnePlus 12": {"w": 412, "h": 915, "hz": 120, "gpu": "adreno"},
-        "OnePlus 11": {"w": 412, "h": 915, "hz": 120, "gpu": "adreno"},
-        "OnePlus 10 Pro": {"w": 412, "h": 915, "hz": 120, "gpu": "adreno"},
-        # Motorola
-        "Motorola Edge 50 Pro": {"w": 412, "h": 915, "hz": 144, "gpu": "adreno"},
-        "Motorola Edge 50": {"w": 412, "h": 915, "hz": 120, "gpu": "adreno"},
-        "Motorola Edge 40 Pro": {"w": 412, "h": 915, "hz": 165, "gpu": "adreno"},
-        "Motorola Edge 40": {"w": 412, "h": 915, "hz": 144, "gpu": "adreno"},
-        "Motorola Edge 30 Ultra": {"w": 412, "h": 915, "hz": 144, "gpu": "adreno"},
-        "Motorola Moto G84": {"w": 412, "h": 915, "hz": 120, "gpu": "adreno"},
-        "Motorola Razr 40 Ultra": {"w": 412, "h": 915, "hz": 165, "gpu": "adreno"},
+        # iPhone - SPRAWDZONE (z JSON)
+        "iPhone 16 Pro Max": {"w": 440, "h": 956, "hz": 120, "gpu": "apple gpu", "dpr": 3.0, "ram": -1},
+        "iPhone 16 Pro": {"w": 402, "h": 874, "hz": 120, "gpu": "apple gpu", "dpr": 3.0, "ram": -1},
+        "iPhone 16": {"w": 393, "h": 852, "hz": 60, "gpu": "apple gpu", "dpr": 3.0, "ram": -1},
+        "iPhone 15 Pro Max": {"w": 430, "h": 932, "hz": 120, "gpu": "apple gpu", "dpr": 3.0, "ram": -1},
+        "iPhone 15 Pro": {"w": 393, "h": 852, "hz": 120, "gpu": "apple gpu", "dpr": 3.0, "ram": -1},
+        "iPhone 14 Pro": {"w": 393, "h": 852, "hz": 120, "gpu": "apple gpu", "dpr": 3.0, "ram": -1},
+        # Samsung - SPRAWDZONE (z JSON)
+        "Samsung Galaxy S24 Ultra": {"w": 384, "h": 824, "hz": 120, "gpu": "adreno 750", "dpr": 3.75, "ram": 8},
+        "Samsung Galaxy S24 Plus": {"w": 384, "h": 832, "hz": 120, "gpu": "adreno 750", "dpr": 3.75, "ram": 8},
+        "Samsung Galaxy S24": {"w": 360, "h": 780, "hz": 120, "gpu": "adreno 750", "dpr": 3.0, "ram": 8},
+        "Samsung Galaxy S23 Ultra": {"w": 384, "h": 824, "hz": 120, "gpu": "adreno 740", "dpr": 3.75, "ram": 8},
+        # Google Pixel - SPRAWDZONE (z JSON)
+        "Google Pixel 8 Pro": {"w": 448, "h": 998, "hz": 120, "gpu": "mali-g715", "dpr": 3.0, "ram": 8},
+        "Google Pixel 7 Pro": {"w": 412, "h": 892, "hz": 120, "gpu": "mali-g710", "dpr": 3.5, "ram": 8},
+        # Xiaomi - SPRAWDZONE (z JSON)
+        "Xiaomi 14 Pro": {"w": 412, "h": 915, "hz": 120, "gpu": "adreno 750", "dpr": 3.5, "ram": 8},
+        "Xiaomi 13 Ultra": {"w": 412, "h": 915, "hz": 120, "gpu": "adreno 740", "dpr": 3.5, "ram": 8},
+        # Motorola - dodatkowe modele
+        "Motorola Edge 50 Pro": {"w": 412, "h": 915, "hz": 144, "gpu": "adreno 735", "dpr": 2.625, "ram": 12},
+        "Motorola Edge 50": {"w": 412, "h": 915, "hz": 120, "gpu": "adreno 732", "dpr": 2.625, "ram": 8},
+        "Motorola Edge 40 Pro": {"w": 412, "h": 915, "hz": 165, "gpu": "adreno 740", "dpr": 2.625, "ram": 12},
+        "Motorola Moto G84": {"w": 412, "h": 915, "hz": 120, "gpu": "adreno 619", "dpr": 2.4, "ram": 8},
     }
 
     matches = []
     gpu_lower = gpu.lower()
 
+    # OS Segmentation - wykryj iOS vs Android
+    is_ios = "apple" in gpu_lower or ram == -1
+
+    logger.info(f"🔍 Weighted Scoring - OS: {'iOS' if is_ios else 'Android'}, DPR: {dpr}, RAM: {ram}")
+
     for model_name, specs in HEURISTIC_DB.items():
         score = 0
         reasons = []
 
-        # Dopasowanie rozdzielczości (50 punktów)
-        if abs(specs["w"] - width) <= 2 and abs(specs["h"] - height) <= 2:
-            score += 50
-            reasons.append(f"Rozdzielczość: {specs['w']}x{specs['h']}")
-        elif abs(specs["w"] - width) <= 10 and abs(specs["h"] - height) <= 10:
-            score += 30
-            reasons.append(f"Rozdzielczość ~{specs['w']}x{specs['h']}")
+        # 1. GPU (Waga: 40 Android / 0 iOS)
+        if not is_ios and specs["gpu"] and gpu_lower:
+            if specs["gpu"] in gpu_lower or any(part in gpu_lower for part in specs["gpu"].split()):
+                score += 40
+                reasons.append(f"GPU: {specs['gpu']}")
 
-        # Dopasowanie odświeżania (30 punktów)
-        if specs["hz"] == refresh_rate:
-            score += 30
-            reasons.append(f"Odświeżanie: {specs['hz']}Hz")
+        # 2. Viewport Width (Waga: 50 iOS / 20 Android)
+        if specs["w"] == width:
+            score += 50 if is_ios else 20
+            reasons.append(f"Szerokość: {specs['w']}px")
+        elif not is_ios and abs(specs["w"] - width) <= 40:
+            score += 10
+            reasons.append(f"Szerokość ~{specs['w']}px")
 
-        # Dopasowanie GPU (20 punktów)
-        if specs["gpu"] in gpu_lower or gpu_lower in specs["gpu"]:
-            score += 20
-            reasons.append(f"GPU: {specs['gpu']}")
+        # 3. Viewport Height (Waga: 30 iOS / 10 Android) - z tolerancją na pasek adresu
+        if specs["h"] == height:
+            score += 30 if is_ios else 10
+            reasons.append(f"Wysokość: {specs['h']}px")
+        elif height < specs["h"] and height > (specs["h"] - 160):
+            # Tolerancja na pasek adresu (100-160px)
+            score += 25 if is_ios else 8
+            reasons.append(f"Wysokość ~{specs['h']}px (pasek adresu)")
+
+        # 4. DPR (Waga: 20 iOS / 25 Android) - KLUCZOWE!
+        if abs(specs["dpr"] - dpr) < 0.1:
+            score += 20 if is_ios else 25
+            reasons.append(f"DPR: {specs['dpr']}x")
+        elif abs(specs["dpr"] - dpr) < 0.5:
+            score += 10
+            reasons.append(f"DPR ~{specs['dpr']}x")
+
+        # 5. Hz (Waga: 5 bonus / -10 kara) - Rozróżnia Pro/Base
+        if specs["hz"] and refresh_rate:
+            if abs(specs["hz"] - refresh_rate) < 5:
+                score += 5
+                reasons.append(f"Hz: {specs['hz']}Hz")
+            else:
+                score -= 10  # Kara za niezgodność (np. iPhone 16 vs 15 Pro)
+
+        # 6. RAM (Waga: 5 Android / 0 iOS) - słaby sygnał
+        if not is_ios and ram > 0 and specs["ram"] > 0:
+            if specs["ram"] == ram:
+                score += 5
+                reasons.append(f"RAM: {specs['ram']}GB")
 
         if score > 0:
             matches.append({
@@ -331,6 +332,11 @@ def find_top_3_matches(width, height, refresh_rate, gpu):
 
     # Sortuj po confidence i zwróć top 3
     matches.sort(key=lambda x: x["confidence"], reverse=True)
+
+    # Loguj top 3
+    for i, match in enumerate(matches[:3], 1):
+        logger.info(f"  #{i}: {match['model']} - {match['confidence']}% ({', '.join(match['reasons'])})")
+
     return matches[:3]
 
 app = Flask(__name__, template_folder='templates')
@@ -372,7 +378,7 @@ def index():
 
 @app.route('/api/check_brain', methods=['POST'])
 @limiter.limit("30 per minute")
-@validate_json('w', 'h', 'hz', 'gpu', 'canvasHash')
+@validate_json('w', 'h', 'hz', 'gpu', 'canvasHash', 'dpr', 'ram', 'cores')
 def check_brain():
     """Check device fingerprint against brain database."""
     try:
@@ -382,6 +388,9 @@ def check_brain():
         refresh_rate = d.get('hz')
         gpu = d.get('gpu')
         canvas_hash = d.get('canvasHash')
+        dpr = d.get('dpr', 1)
+        ram = d.get('ram', -1)
+        cores = d.get('cores', -1)
 
         if not isinstance(width, (int, float)) or width <= 0 or width > 10000:
             return jsonify({"error": "Invalid width value"}), 400
@@ -393,15 +402,30 @@ def check_brain():
             return jsonify({"error": "Invalid GPU value"}), 400
         if not isinstance(canvas_hash, str) or len(canvas_hash) > 100:
             return jsonify({"error": "Invalid canvasHash value"}), 400
+        if not isinstance(dpr, (int, float)) or dpr <= 0 or dpr > 10:
+            return jsonify({"error": "Invalid DPR value"}), 400
+        if not isinstance(ram, (int, float)) or ram < -1 or ram > 100:
+            return jsonify({"error": "Invalid RAM value"}), 400
+        if not isinstance(cores, (int, float)) or cores < -1 or cores > 100:
+            return jsonify({"error": "Invalid cores value"}), 400
 
         user_agent = d.get('userAgent', '')
+
+        # TYMCZASOWE LOGOWANIE - do debugowania Motoroli
+        logger.info(f"🔍 FULL USER-AGENT: {user_agent}")
+
         ua_id = parse_device_from_ua(user_agent)
+
+        logger.info(f"🔍 PARSED UA_ID: {ua_id}")
 
         detection_log = {
             "ua_detected": ua_id,
             "ua_full": user_agent[:100] + "..." if len(user_agent) > 100 else user_agent,
-            "fingerprint": f"{width}x{height} @ {refresh_rate}Hz, GPU: {gpu}",
-            "canvas_hash": canvas_hash
+            "fingerprint": f"{width}x{height} @ {dpr}x DPR, {refresh_rate}Hz, RAM: {ram}GB, Cores: {cores}, GPU: {gpu}",
+            "canvas_hash": canvas_hash,
+            "dpr": dpr,
+            "ram": ram,
+            "cores": cores
         }
 
         # Priorytet 1: User-Agent z dokładnym dopasowaniem w EXTERNAL_DB
@@ -434,8 +458,8 @@ def check_brain():
                 "detection_log": detection_log
             })
 
-        # Priorytet 3: Baza AI (fingerprint)
-        signature = f"{width}_{height}_{refresh_rate}_{gpu}_{canvas_hash}"
+        # Priorytet 3: Baza AI (fingerprint) - NOWA SYGNATURA Z DPR I RAM
+        signature = f"{width}_{height}_{dpr}_{ram}_{refresh_rate}_{gpu}_{canvas_hash}"
 
         if signature in BRAIN:
             models = BRAIN[signature]
@@ -457,7 +481,7 @@ def check_brain():
             })
 
         # Priorytet 4: Heurystyka - znajdź 3 najlepiej dopasowane modele z całej bazy
-        suggestions = find_top_3_matches(width, height, refresh_rate, gpu)
+        suggestions = find_top_3_matches(width, height, refresh_rate, gpu, dpr, ram, cores)
 
         if suggestions:
             detection_log["method"] = "HEURISTIC_TOP3"
@@ -484,7 +508,7 @@ def check_brain():
 
 @app.route('/api/learn', methods=['POST'])
 @limiter.limit("10 per minute")
-@validate_json('w', 'h', 'hz', 'gpu', 'canvasHash', 'model')
+@validate_json('w', 'h', 'hz', 'gpu', 'canvasHash', 'model', 'dpr', 'ram', 'cores')
 def learn():
     """Teach the AI brain with new device fingerprint."""
     try:
@@ -495,6 +519,9 @@ def learn():
         gpu = d.get('gpu')
         canvas_hash = d.get('canvasHash')
         model = d.get('model')
+        dpr = d.get('dpr', 1)
+        ram = d.get('ram', -1)
+        cores = d.get('cores', -1)
 
         if not isinstance(width, (int, float)) or width <= 0 or width > 10000:
             return jsonify({"error": "Invalid width value"}), 400
@@ -508,8 +535,14 @@ def learn():
             return jsonify({"error": "Invalid canvasHash value"}), 400
         if not isinstance(model, str) or len(model) > 100 or len(model) == 0:
             return jsonify({"error": "Invalid model value"}), 400
+        if not isinstance(dpr, (int, float)) or dpr <= 0 or dpr > 10:
+            return jsonify({"error": "Invalid DPR value"}), 400
+        if not isinstance(ram, (int, float)) or ram < -1 or ram > 100:
+            return jsonify({"error": "Invalid RAM value"}), 400
+        if not isinstance(cores, (int, float)) or cores < -1 or cores > 100:
+            return jsonify({"error": "Invalid cores value"}), 400
 
-        signature = f"{width}_{height}_{refresh_rate}_{gpu}_{canvas_hash}"
+        signature = f"{width}_{height}_{dpr}_{ram}_{refresh_rate}_{gpu}_{canvas_hash}"
 
         if signature not in BRAIN and len(BRAIN) >= MAX_BRAIN_SIGNATURES:
             oldest_signature = next(iter(BRAIN))
