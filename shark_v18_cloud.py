@@ -44,6 +44,7 @@ if USE_MONGODB:
         db = mongo_client[MONGODB_DB]
         brain_collection = db['brain']
         logs_collection = db['logs']
+        verified_models_collection = db['verified_models']
         logger.info("✅ MongoDB connected successfully")
     except Exception as e:
         logger.error(f"❌ MongoDB connection failed: {e}")
@@ -709,6 +710,86 @@ def admin_export_models():
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+@app.route('/admin/api/verified-models', methods=['GET'])
+def admin_get_verified_models():
+    """API: Pobierz wszystkie zweryfikowane modele."""
+    try:
+        if USE_MONGODB and verified_models_collection:
+            models = list(verified_models_collection.find({}, {'_id': 0}))
+            return jsonify({"status": "OK", "models": models, "count": len(models)})
+        else:
+            return jsonify({"status": "ERROR", "error": "MongoDB not available"}), 500
+    except Exception as e:
+        logger.error(f"Error getting verified models: {e}")
+        return jsonify({"status": "ERROR", "error": str(e)}), 500
+
+@app.route('/admin/api/verified-models', methods=['POST'])
+def admin_add_verified_model():
+    """API: Dodaj nowy zweryfikowany model."""
+    try:
+        data = request.json
+        required_fields = ['name', 'system_name', 'w', 'h', 'dpr', 'ram', 'hz', 'gpu']
+
+        for field in required_fields:
+            if field not in data:
+                return jsonify({"status": "ERROR", "error": f"Missing field: {field}"}), 400
+
+        if USE_MONGODB and verified_models_collection:
+            # Sprawdź czy model już istnieje
+            existing = verified_models_collection.find_one({'system_name': data['system_name']})
+            if existing:
+                return jsonify({"status": "ERROR", "error": "Model already exists"}), 400
+
+            verified_models_collection.insert_one(data)
+            logger.info(f"Added verified model: {data['system_name']}")
+            return jsonify({"status": "OK", "message": "Model added successfully"})
+        else:
+            return jsonify({"status": "ERROR", "error": "MongoDB not available"}), 500
+    except Exception as e:
+        logger.error(f"Error adding verified model: {e}")
+        return jsonify({"status": "ERROR", "error": str(e)}), 500
+
+@app.route('/admin/api/verified-models/<system_name>', methods=['PUT'])
+def admin_update_verified_model(system_name):
+    """API: Aktualizuj zweryfikowany model."""
+    try:
+        data = request.json
+
+        if USE_MONGODB and verified_models_collection:
+            result = verified_models_collection.update_one(
+                {'system_name': system_name},
+                {'$set': data}
+            )
+
+            if result.modified_count > 0:
+                logger.info(f"Updated verified model: {system_name}")
+                return jsonify({"status": "OK", "message": "Model updated successfully"})
+            else:
+                return jsonify({"status": "ERROR", "error": "Model not found"}), 404
+        else:
+            return jsonify({"status": "ERROR", "error": "MongoDB not available"}), 500
+    except Exception as e:
+        logger.error(f"Error updating verified model: {e}")
+        return jsonify({"status": "ERROR", "error": str(e)}), 500
+
+@app.route('/admin/api/verified-models/<system_name>', methods=['DELETE'])
+def admin_delete_verified_model(system_name):
+    """API: Usuń zweryfikowany model."""
+    try:
+        if USE_MONGODB and verified_models_collection:
+            result = verified_models_collection.delete_one({'system_name': system_name})
+
+            if result.deleted_count > 0:
+                logger.info(f"Deleted verified model: {system_name}")
+                return jsonify({"status": "OK", "message": "Model deleted successfully"})
+            else:
+                return jsonify({"status": "ERROR", "error": "Model not found"}), 404
+        else:
+            return jsonify({"status": "ERROR", "error": "MongoDB not available"}), 500
+    except Exception as e:
+        logger.error(f"Error deleting verified model: {e}")
+        return jsonify({"status": "ERROR", "error": str(e)}), 500
 
 if __name__ == '__main__':
     load_data()
