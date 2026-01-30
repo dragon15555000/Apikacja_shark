@@ -18,6 +18,30 @@ import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+def fetch_matomo_data(url):
+    """Pobierz dane Matomo z cache lub z sieci."""
+    import requests
+
+    local_cache = "matomo_mobiles.yml"
+
+    # Sprawdź czy mamy lokalną kopię
+    if os.path.exists(local_cache):
+        logger.info("📂 Używam lokalnej kopii pliku definicji Matomo.")
+        with open(local_cache, 'r', encoding='utf-8') as f:
+            return f.read()
+
+    # Jeśli nie, pobierz z sieci
+    logger.info("🌐 Pobieranie definicji z GitHub...")
+    response = requests.get(url, timeout=30)
+    response.raise_for_status()
+
+    # Zapisz cache
+    with open(local_cache, 'w', encoding='utf-8') as f:
+        f.write(response.text)
+    logger.info("💾 Zapisano lokalną kopię cache.")
+
+    return response.text
+
 def import_matomo_models():
     """Importuj modele z Matomo Device Detector do EXTERNAL_DB."""
     try:
@@ -26,10 +50,8 @@ def import_matomo_models():
 
         MATOMO_URL = "https://raw.githubusercontent.com/matomo-org/device-detector/master/regexes/device/mobiles.yml"
 
-        logger.info("📥 Pobieranie danych z Matomo Device Detector...")
-        response = requests.get(MATOMO_URL, timeout=30)
-        response.raise_for_status()
-        devices_data = yaml.safe_load(response.text)
+        yaml_content = fetch_matomo_data(MATOMO_URL)
+        devices_data = yaml.safe_load(yaml_content)
 
         # Bazowe identyfikatory (iPhone, Samsung, etc.)
         STATIC_IDENTIFIERS = {

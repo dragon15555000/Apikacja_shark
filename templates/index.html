@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#F2F2F7">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>SHARK v18 Cloud</title>
+    <style>
+        :root { --ios-bg: #F2F2F7; --ios-card: #FFF; --ios-blue: #007AFF; --ios-green: #34C759; --ios-text: #000; --ios-sub: #8E8E93; --ios-sep: #C6C6C8; }
+        body { font-family: -apple-system, sans-serif; background: var(--ios-bg); margin: 0; padding: env(safe-area-inset-top) 0 20px 0; color: var(--ios-text); -webkit-font-smoothing: antialiased; }
+        .header { background: rgba(242,242,247,0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); padding: 10px 20px; position: sticky; top: 0; z-index: 100; border-bottom: 0.5px solid rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; }
+        .header h1 { margin: 0; font-size: 22px; font-weight: 700; }
+        .header .status { font-size: 11px; font-weight: 600; color: var(--ios-green); background: rgba(52, 199, 89, 0.1); padding: 4px 8px; border-radius: 12px; }
+        .container { padding: 20px; max-width: 600px; margin: 0 auto; }
+        .ios-group { background: var(--ios-card); border-radius: 12px; overflow: hidden; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .group-title { font-size: 13px; color: var(--ios-sub); text-transform: uppercase; margin: 0 0 8px 15px; font-weight: 500; }
+        .row { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border-bottom: 0.5px solid var(--ios-sep); font-size: 17px; }
+        .row:last-child { border-bottom: none; }
+        .row .val { color: var(--ios-sub); max-width: 60%; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .row .val.strong { color: var(--ios-blue); font-weight: 600; }
+        .btn-scan { background: var(--ios-blue); color: white; border: none; width: 100%; padding: 16px; font-size: 17px; font-weight: 600; border-radius: 12px; cursor: pointer; transition: transform 0.1s; }
+        .btn-scan:active { transform: scale(0.98); opacity: 0.9; }
+        #result-hero { text-align: center; padding: 30px 20px; display: none; }
+        .model-name { font-size: 32px; font-weight: 700; color: var(--ios-text); line-height: 1.2; margin-bottom: 5px; }
+        .conf-badge { font-size: 13px; color: var(--ios-blue); background: #eef5ff; padding: 4px 12px; border-radius: 20px; font-weight: 600; display: inline-block; }
+        .code-box { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 25px; border-radius: 16px; margin: 20px 0; text-align: center; box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3); }
+        .code-label { font-size: 12px; color: rgba(255,255,255,0.8); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+        .code-value { font-size: 48px; font-weight: 900; color: white; letter-spacing: 3px; font-family: 'Courier New', monospace; text-shadow: 0 2px 10px rgba(0,0,0,0.3); }
+        .code-desc { font-size: 13px; color: rgba(255,255,255,0.9); margin-top: 8px; }
+        select { width: 100%; padding: 12px; border-radius: 10px; border: none; background: #E9E9EB; font-size: 16px; margin-bottom: 10px; color: var(--ios-blue); font-weight: 600; text-align: center; }
+        .btn-fix { width: 100%; padding: 12px; background: transparent; color: var(--ios-green); border: none; font-weight: 600; font-size: 16px; }
+    </style>
+</head>
+<body>
+    <div class="header"><h1>SHARK v18 ☁️</h1><div class="status">ONLINE • CLOUD</div></div>
+    <div id="result-hero"><div class="model-name" id="displayModel">...</div><div class="conf-badge" id="displayConf">...</div></div>
+    <div class="container">
+        <div class="ios-group"><div style="padding: 15px;"><button id="scanBtn" class="btn-scan" onclick="startSharkScan()">🚀 Rozpocznij Skanowanie</button></div></div>
+        <div id="codesSection" style="display:none;">
+            <div class="code-box"><div class="code-label">📱 Kod Szybki</div><div class="code-value" id="codeScreen">-</div><div class="code-desc">Podaj ten kod sprzedawcy</div></div>
+            <div class="group-title">Dostępne Akcesoria</div>
+            <div class="ios-group"><div class="row"><span>🛡️ Szkło Ochronne</span><span class="val strong" id="codeScreenDetail">-</span></div><div class="row"><span>📦 Etui</span><span class="val strong" id="codeCase">-</span></div></div>
+        </div>
+        <div class="group-title">Parametry</div>
+        <div class="ios-group">
+            <div class="row"><span>Rozdzielczość</span><span class="val" id="val-res">-</span></div>
+            <div class="row"><span>Odświeżanie</span><span class="val strong" id="val-hz">-</span></div>
+            <div class="row"><span>GPU</span><span class="val" id="val-gpu">-</span></div>
+            <div class="row"><span>Canvas Hash</span><span class="val" id="val-hash">-</span></div>
+            <div class="row"><span>UA System</span><span class="val" id="val-ua" style="font-size:10px">-</span></div>
+        </div>
+        <div class="group-title" id="fixTitle" style="display:none">Korekta AI</div>
+        <div class="ios-group" id="fixGroup" style="display:none; padding:15px;">
+            <select id="modelSelector"></select>
+            <input type="text" id="customModel" placeholder="Lub wpisz nowy model (np. Motorola Edge 50)..." style="width:100%;padding:12px;border-radius:10px;border:1px solid #E9E9EB;font-size:16px;margin:10px 0;">
+            <button class="btn-fix" onclick="teachBrain()">✅ Zapisz i Naucz AI</button>
+        </div>
+    </div>
+<script>
+    const DB_HEURISTIC = [
+        {name:"iPhone 17 Pro Max",w:440,h:956,hz:120,gpu:"a19"}, {name:"iPhone 17 Pro",w:402,h:874,hz:120,gpu:"a19"},
+        {name:"iPhone 16 Pro Max",w:440,h:956,hz:120,gpu:"a18"}, {name:"iPhone 16 Pro",w:402,h:874,hz:120,gpu:"a18"},
+        {name:"iPhone 16 / Plus",w:393,h:852,hz:60,gpu:"a18"}, {name:"iPhone 15 Pro Max",w:430,h:932,hz:120,gpu:"a17"},
+        {name:"iPhone 15 Pro",w:393,h:852,hz:120,gpu:"a17"}, {name:"iPhone 15 / Plus",w:393,h:852,hz:60,gpu:"a16"},
+        {name:"iPhone 14 Pro Max",w:430,h:932,hz:120,gpu:"a16"}, {name:"iPhone 14 Pro",w:393,h:852,hz:120,gpu:"a16"},
+        {name:"iPhone 13 Pro Max",w:428,h:926,hz:120,gpu:"a15"}, {name:"iPhone 13 / 14",w:390,h:844,hz:60,gpu:"a15"},
+        {name:"iPhone 12 / Pro",w:390,h:844,hz:60,gpu:"a14"}, {name:"iPhone 11",w:414,h:896,hz:60,gpu:"a13"},
+        {name:"Samsung Galaxy S24 Ultra",w:412,h:915,hz:120,gpu:"adreno"}, {name:"Samsung Galaxy S24+",w:384,h:854,hz:120,gpu:"adreno"},
+        {name:"Samsung Galaxy S24",w:360,h:780,hz:120,gpu:"adreno"}, {name:"Samsung Galaxy S23 Ultra",w:412,h:915,hz:120,gpu:"adreno"},
+        {name:"Samsung Galaxy S23+",w:384,h:854,hz:120,gpu:"adreno"}, {name:"Samsung Galaxy S23",w:360,h:780,hz:120,gpu:"adreno"},
+        {name:"Samsung Galaxy S22 Ultra",w:412,h:915,hz:120,gpu:"adreno"}, {name:"Samsung Galaxy S22+",w:384,h:854,hz:120,gpu:"adreno"},
+        {name:"Samsung Galaxy S22",w:360,h:780,hz:120,gpu:"adreno"}, {name:"Samsung Galaxy S21 Ultra",w:412,h:915,hz:120,gpu:"mali"},
+        {name:"Samsung Galaxy S21+",w:384,h:854,hz:120,gpu:"mali"}, {name:"Samsung Galaxy S21",w:360,h:780,hz:120,gpu:"mali"},
+        {name:"Samsung Galaxy S20 Ultra",w:412,h:915,hz:120,gpu:"mali"}, {name:"Samsung Galaxy S20+",w:384,h:854,hz:120,gpu:"mali"},
+        {name:"Samsung Galaxy S20",w:360,h:800,hz:120,gpu:"mali"},
+        {name:"Samsung Galaxy A54",w:412,h:914,hz:120,gpu:"adreno"}, {name:"Samsung Galaxy A53",w:412,h:914,hz:120,gpu:"adreno"},
+        {name:"Samsung Galaxy A52",w:412,h:914,hz:90,gpu:"adreno"}, {name:"Samsung Galaxy A34",w:412,h:914,hz:120,gpu:"mali"},
+        {name:"Samsung Galaxy A33",w:412,h:914,hz:90,gpu:"mali"},
+        {name:"Google Pixel 8 Pro",w:412,h:915,hz:120,gpu:"mali"}, {name:"Google Pixel 8",w:412,h:915,hz:120,gpu:"mali"},
+        {name:"Google Pixel 7 Pro",w:412,h:915,hz:120,gpu:"mali"}, {name:"Google Pixel 7",w:412,h:915,hz:90,gpu:"mali"},
+        {name:"Google Pixel 6 Pro",w:412,h:915,hz:120,gpu:"mali"}, {name:"Google Pixel 6",w:412,h:915,hz:90,gpu:"mali"},
+        {name:"Google Pixel 5",w:393,h:851,hz:90,gpu:"adreno"},
+        {name:"Xiaomi 14 Pro",w:412,h:915,hz:120,gpu:"adreno"}, {name:"Xiaomi 14",w:412,h:915,hz:120,gpu:"adreno"},
+        {name:"Xiaomi 13 Ultra",w:412,h:915,hz:120,gpu:"adreno"}, {name:"Xiaomi 13 Pro",w:412,h:915,hz:120,gpu:"adreno"},
+        {name:"Xiaomi 13",w:412,h:915,hz:120,gpu:"adreno"}, {name:"Xiaomi 12 Pro",w:412,h:915,hz:120,gpu:"adreno"},
+        {name:"Xiaomi 12",w:412,h:915,hz:120,gpu:"adreno"}, {name:"Xiaomi Mi 11",w:412,h:915,hz:120,gpu:"adreno"},
+        {name:"OnePlus 12",w:412,h:915,hz:120,gpu:"adreno"}, {name:"OnePlus 11",w:412,h:915,hz:120,gpu:"adreno"},
+        {name:"OnePlus 10 Pro",w:412,h:915,hz:120,gpu:"adreno"}, {name:"OnePlus 9 Pro",w:412,h:915,hz:120,gpu:"adreno"},
+        {name:"OnePlus 9",w:412,h:915,hz:120,gpu:"adreno"}, {name:"OnePlus 8 Pro",w:412,h:915,hz:120,gpu:"adreno"},
+        {name:"OnePlus 8",w:412,h:915,hz:90,gpu:"adreno"}
+    ];
+    const allModels=["iPhone 17 Pro Max","iPhone 17 Pro","iPhone 17","iPhone Air","iPhone 16 Pro Max","iPhone 16 Pro","iPhone 16","iPhone 16 Plus","iPhone 16e","iPhone 15 Pro Max","iPhone 15 Pro","iPhone 15","iPhone 15 Plus","iPhone 14 Pro Max","iPhone 14 Pro","iPhone 14","iPhone 14 Plus","iPhone 13 Pro Max","iPhone 13 Pro","iPhone 13","iPhone 12 Pro Max","iPhone 12 Pro","iPhone 12","iPhone 11 Pro Max","iPhone 11 Pro","iPhone 11","Samsung Galaxy S24 Ultra","Samsung Galaxy S24+","Samsung Galaxy S24","Samsung Galaxy S23 Ultra","Samsung Galaxy S23+","Samsung Galaxy S23","Samsung Galaxy S22 Ultra","Samsung Galaxy S22+","Samsung Galaxy S22","Samsung Galaxy S21 Ultra","Samsung Galaxy S21+","Samsung Galaxy S21","Samsung Galaxy S20 Ultra","Samsung Galaxy S20+","Samsung Galaxy S20","Samsung Galaxy A54","Samsung Galaxy A53","Samsung Galaxy A52","Samsung Galaxy A34","Samsung Galaxy A33","Samsung Galaxy Z Fold 5","Samsung Galaxy Z Fold 4","Samsung Galaxy Z Fold 3","Samsung Galaxy Z Flip 5","Samsung Galaxy Z Flip 4","Google Pixel 9 Pro XL","Google Pixel 9 Pro","Google Pixel 9","Google Pixel 8 Pro","Google Pixel 8","Google Pixel 7 Pro","Google Pixel 7","Google Pixel 6 Pro","Google Pixel 6","Google Pixel 5","Xiaomi 14 Ultra","Xiaomi 14 Pro","Xiaomi 14","Xiaomi 13 Ultra","Xiaomi 13 Pro","Xiaomi 13","Xiaomi 12 Pro","Xiaomi 12","Xiaomi Mi 11","Redmi Note 13 Pro+","Redmi Note 13 Pro","Redmi Note 12 Pro+","Redmi Note 12 Pro","OnePlus 12","OnePlus 11","OnePlus 10 Pro","OnePlus 9 Pro","OnePlus 9","OnePlus 8 Pro","OnePlus 8","Motorola Edge 50 Pro","Motorola Edge 40 Pro","Motorola Edge 30 Pro","Motorola moto g power (2022)","Motorola moto g stylus (2022)","Huawei P60 Pro","Huawei P50 Pro","Huawei Mate 60 Pro","Oppo Find X6 Pro","Oppo Find X5 Pro","Vivo X100 Pro","Vivo X90 Pro"];
+    const sel=document.getElementById('modelSelector'); allModels.forEach(m=>{let o=document.createElement('option');o.value=m;o.text=m;sel.appendChild(o);});
+    let currentScanData=null;
+    function getCanvasHash(){try{const c=document.createElement('canvas');const ctx=c.getContext('2d');c.width=200;c.height=50;ctx.textBaseline="top";ctx.font="14px Arial";ctx.fillStyle="#f60";ctx.fillRect(125,1,62,20);ctx.fillStyle="#069";ctx.fillText("SHARK_v18",2,15);const b64=c.toDataURL().replace("data:image/png;base64,","");let h=0;for(let i=0;i<b64.length;i++){h=((h<<5)-h)+b64.charCodeAt(i);h|=0;}return h.toString(16);}catch(e){return "error";}}
+    function measureHz(){return new Promise(r=>{let f=0,s=performance.now();function l(){f++;if(performance.now()-s>=500)r(Math.round(f*2)<70?60:120);else requestAnimationFrame(l);}requestAnimationFrame(l);});}
+    async function startSharkScan(){
+        const btn=document.getElementById('scanBtn');btn.disabled=true;btn.innerText="...";document.getElementById('result-hero').style.display='block';
+        const gc=document.createElement('canvas'),gl=gc.getContext('webgl'),di=gl?gl.getExtension('WEBGL_debug_renderer_info'):null;
+        let gpu=di?gl.getParameter(di.UNMASKED_RENDERER_WEBGL):"unknown";if(gpu.includes("Apple"))gpu=gpu.replace("Apple ","").replace(" GPU","").trim();
+        const hz=await measureHz(),hash=getCanvasHash(),w=Math.min(screen.width,screen.height),h=Math.max(screen.width,screen.height);
+        const data={w:w,h:h,hz:hz,gpu:gpu.toLowerCase(),canvasHash:hash,userAgent:navigator.userAgent,model:""};
+        currentScanData=data;
+        document.getElementById('val-res').innerText=w + ' x ' + h;document.getElementById('val-hz').innerText=hz + ' Hz';
+        document.getElementById('val-gpu').innerText=gpu;document.getElementById('val-hash').innerText=hash;
+        document.getElementById('val-ua').innerText=navigator.userAgent.substring(0,25)+"...";
+        try{
+            const res=await fetch('/api/check_brain',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+            const d=await res.json();
+            if(d.found) {
+                showResult(d.model,d.confidence,d.source.includes("AI")||d.source.includes("UA"));
+                if(d.codes) showCodes(d.codes);
+            }
+            else runClientHeuristics(data);
+        }catch(e){runClientHeuristics(data);}
+        document.getElementById('fixTitle').style.display='block';document.getElementById('fixGroup').style.display='block';btn.innerText="Skanuj Ponownie";btn.disabled=false;
+    }
+    function runClientHeuristics(fp){
+        let best={name:"Nieznany",score:0};
+        DB_HEURISTIC.forEach(m=>{let s=0;if(Math.abs(m.w-fp.w)<=1&&Math.abs(m.h-fp.h)<=1)s+=50;if(m.hz===fp.hz)s+=30;if(fp.gpu.includes(m.gpu))s+=20;if(s>best.score)best={name:m.name,score:s};});
+        showResult(best.name,best.score>=50?best.score:0,false);
+    }
+    function showResult(m,c,ai){const d=document.getElementById('displayModel'),b=document.getElementById('displayConf');d.innerText=m;b.innerText=ai?'🧠 PEWNOŚĆ: ' + c + '%':'⚙️ ALGORYTM: ' + c + '%';b.style.background=ai?'#eef5ff':'#f2f2f7';b.style.color=ai?'#007aff':'#8e8e93';const sel=document.getElementById('modelSelector');for(let i=0;i<sel.options.length;i++)if(sel.options[i].value===m){sel.selectedIndex=i;break;}}
+    function showCodes(codes){
+        if(!codes || (!codes.screen && !codes.case)) return;
+        document.getElementById('codesSection').style.display='block';
+        document.getElementById('codeScreen').innerText=codes.screen || 'N/A';
+        document.getElementById('codeScreenDetail').innerText=codes.screen || 'N/A';
+        document.getElementById('codeCase').innerText=codes.case || 'N/A';
+    }
+    async function teachBrain(){
+        if(!currentScanData)return;
+        const customModel=document.getElementById('customModel').value.trim();
+        const selectedModel=document.getElementById('modelSelector').value;
+        currentScanData.model=customModel || selectedModel;
+        if(!currentScanData.model){alert("⚠️ Wybierz lub wpisz model!");return;}
+        await fetch('/api/learn',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(currentScanData)});
+        alert("✅ Nauczono! Model: "+currentScanData.model);
+        showResult(currentScanData.model,100,true);
+        document.getElementById('customModel').value='';
+    }
+</script></body></html>
