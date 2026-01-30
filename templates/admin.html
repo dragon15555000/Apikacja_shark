@@ -79,6 +79,53 @@
         </div>
 
         <div class="section">
+            <h2>✅ Baza Zweryfikowanych Modeli (Weighted Scoring)</h2>
+            <div class="alert alert-success">
+                <strong>✅ Info:</strong> Sprawdzone parametry urządzeń używane przez algorytm Weighted Scoring.
+            </div>
+            <button class="btn btn-success" onclick="showAddModelForm()">➕ Dodaj Nowy Model</button>
+            <button class="btn" onclick="loadVerifiedModels()" style="margin-left: 10px;">🔄 Odśwież</button>
+
+            <div id="addModelForm" style="display:none; margin-top: 20px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+                <h3 style="margin-bottom: 15px;">Dodaj Nowy Model</h3>
+                <input type="text" id="newModelName" placeholder="Nazwa (np. iPhone 16 Pro Max)">
+                <input type="text" id="newModelSystemName" placeholder="Nazwa systemowa (np. Apple iPhone 16 Pro Max)">
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+                    <input type="number" id="newModelW" placeholder="Szerokość (w)">
+                    <input type="number" id="newModelH" placeholder="Wysokość (h)">
+                    <input type="number" step="0.01" id="newModelDpr" placeholder="DPR (np. 3.0)">
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+                    <input type="number" id="newModelRam" placeholder="RAM GB (lub -1)">
+                    <input type="number" id="newModelHz" placeholder="Hz (np. 120)">
+                    <input type="text" id="newModelGpu" placeholder="GPU (np. apple gpu)">
+                </div>
+                <button class="btn btn-success" onclick="addVerifiedModel()" style="margin-top: 10px;">💾 Zapisz Model</button>
+                <button class="btn" onclick="hideAddModelForm()" style="margin-left: 10px;">❌ Anuluj</button>
+            </div>
+
+            <div class="scrollable" style="margin-top: 20px;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nazwa</th>
+                            <th>Nazwa Systemowa</th>
+                            <th>W x H</th>
+                            <th>DPR</th>
+                            <th>RAM</th>
+                            <th>Hz</th>
+                            <th>GPU</th>
+                            <th>Akcje</th>
+                        </tr>
+                    </thead>
+                    <tbody id="verifiedModelsTableBody">
+                        <tr><td colspan="8" style="text-align: center; color: #999;">Ładowanie...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="section">
             <h2>🧠 Baza AI Brain - Nauczonych Modeli</h2>
             <div class="alert alert-info">
                 <strong>ℹ️ Info:</strong> Baza AI przechowuje fingerprint urządzeń i przypisane do nich modele.
@@ -212,6 +259,115 @@
         }
 
         loadBrainData();
+        loadVerifiedModels();
+
+        // === ZARZĄDZANIE ZWERYFIKOWANYMI MODELAMI ===
+
+        async function loadVerifiedModels() {
+            try {
+                const res = await fetch('/admin/api/verified-models');
+                const data = await res.json();
+
+                const tbody = document.getElementById('verifiedModelsTableBody');
+
+                if (data.status === 'OK' && data.models.length > 0) {
+                    tbody.innerHTML = data.models.map(m =>
+                        '<tr>' +
+                        '<td>' + m.name + '</td>' +
+                        '<td>' + m.system_name + '</td>' +
+                        '<td>' + m.w + ' x ' + m.h + '</td>' +
+                        '<td>' + m.dpr + 'x</td>' +
+                        '<td>' + (m.ram > 0 ? m.ram + ' GB' : 'N/A') + '</td>' +
+                        '<td>' + m.hz + ' Hz</td>' +
+                        '<td style="font-size: 11px;">' + m.gpu + '</td>' +
+                        '<td>' +
+                        '<button class="btn btn-danger" style="padding: 6px 12px; font-size: 12px;" onclick="deleteVerifiedModel(\'' + m.system_name + '\')">🗑️</button>' +
+                        '</td>' +
+                        '</tr>'
+                    ).join('');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #999;">Brak zweryfikowanych modeli</td></tr>';
+                }
+            } catch (e) {
+                console.error('Error loading verified models:', e);
+            }
+        }
+
+        function showAddModelForm() {
+            document.getElementById('addModelForm').style.display = 'block';
+        }
+
+        function hideAddModelForm() {
+            document.getElementById('addModelForm').style.display = 'none';
+            // Wyczyść pola
+            document.getElementById('newModelName').value = '';
+            document.getElementById('newModelSystemName').value = '';
+            document.getElementById('newModelW').value = '';
+            document.getElementById('newModelH').value = '';
+            document.getElementById('newModelDpr').value = '';
+            document.getElementById('newModelRam').value = '';
+            document.getElementById('newModelHz').value = '';
+            document.getElementById('newModelGpu').value = '';
+        }
+
+        async function addVerifiedModel() {
+            const model = {
+                name: document.getElementById('newModelName').value.trim(),
+                system_name: document.getElementById('newModelSystemName').value.trim(),
+                w: parseInt(document.getElementById('newModelW').value),
+                h: parseInt(document.getElementById('newModelH').value),
+                dpr: parseFloat(document.getElementById('newModelDpr').value),
+                ram: parseInt(document.getElementById('newModelRam').value),
+                hz: parseInt(document.getElementById('newModelHz').value),
+                gpu: document.getElementById('newModelGpu').value.trim()
+            };
+
+            if (!model.name || !model.system_name || !model.w || !model.h || !model.dpr || !model.hz || !model.gpu) {
+                alert('⚠️ Wypełnij wszystkie pola!');
+                return;
+            }
+
+            try {
+                const res = await fetch('/admin/api/verified-models', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(model)
+                });
+
+                const data = await res.json();
+
+                if (data.status === 'OK') {
+                    alert('✅ Model dodany pomyślnie!');
+                    hideAddModelForm();
+                    loadVerifiedModels();
+                } else {
+                    alert('❌ Błąd: ' + data.error);
+                }
+            } catch (e) {
+                alert('❌ Błąd: ' + e.message);
+            }
+        }
+
+        async function deleteVerifiedModel(systemName) {
+            if (!confirm('🗑️ Czy na pewno usunąć model: ' + systemName + '?')) return;
+
+            try {
+                const res = await fetch('/admin/api/verified-models/' + encodeURIComponent(systemName), {
+                    method: 'DELETE'
+                });
+
+                const data = await res.json();
+
+                if (data.status === 'OK') {
+                    alert('✅ Model usunięty!');
+                    loadVerifiedModels();
+                } else {
+                    alert('❌ Błąd: ' + data.error);
+                }
+            } catch (e) {
+                alert('❌ Błąd: ' + e.message);
+            }
+        }
     </script>
 </body>
 </html>
