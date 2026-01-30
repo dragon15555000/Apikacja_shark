@@ -1,0 +1,239 @@
+═══════════════════════════════════════════════════════════════
+    🦈 SHARK v18 - KOMPLETNA LISTA KODÓW AKCESORIÓW
+═══════════════════════════════════════════════════════════════
+
+📱 APPLE iPHONE
+═══════════════════════════════════════════════════════════════
+
+┌─────────────────────────────┬──────────┬──────────┐
+│ MODEL                       │ SZKŁO    │ ETUI     │
+├─────────────────────────────┼──────────┼──────────┤
+│ iPhone 17 Pro Max           │ A1U1     │ A1U2     │
+│ iPhone 17 Pro               │ A2U1     │ A2U2     │
+│ iPhone 17                   │ A3U1     │ A3U2     │
+│ iPhone Air                  │ A4U1     │ A4U2     │
+├─────────────────────────────┼──────────┼──────────┤
+│ iPhone 16 Pro Max           │ B1U1     │ B1U2     │
+│ iPhone 16 Pro               │ B2U1     │ B2U2     │
+│ iPhone 16                   │ B3U1     │ B3U2     │
+│ iPhone 16 Plus              │ B4U1     │ B4U2     │
+│ iPhone 16e                  │ B5U1     │ B5U2     │
+├─────────────────────────────┼──────────┼──────────┤
+│ iPhone 15 Pro Max           │ C1U1     │ C1U2     │
+│ iPhone 15 Pro               │ C2U1     │ C2U2     │
+│ iPhone 15                   │ C3U1     │ C3U2     │
+│ iPhone 15 Plus              │ C4U1     │ C4U2     │
+├─────────────────────────────┼──────────┼──────────┤
+│ iPhone 14 Pro Max           │ D1U1     │ D1U2     │
+│ iPhone 14 Pro               │ D2U1     │ D2U2     │
+│ iPhone 14                   │ D3U1     │ D3U2     │
+│ iPhone 14 Plus              │ D4U1     │ D4U2     │
+├─────────────────────────────┼──────────┼──────────┤
+│ iPhone 13 Pro Max           │ E1U1     │ E1U2     │
+│ iPhone 13 Pro               │ E2U1     │ E2U2     │
+│ iPhone 13                   │ E3U1     │ E3U2     │
+├─────────────────────────────┼──────────┼──────────┤
+│ iPhone 12 Pro Max           │ F1U1     │ F1U2     │
+│ iPhone 12 Pro               │ F2U1     │ F2U2     │
+│ iPhone 12                   │ F3U1     │ F3U2     │
+├─────────────────────────────┼──────────┼──────────┤
+│ iPhone 11 Pro Max           │ G1U1     │ G1U2     │
+│ iPhone 11 Pro               │ G2U1     │ G2U2     │
+│ iPhone 11                   │ G3U1     │ G3U2     │
+└─────────────────────────────┴──────────┴──────────┘
+
+
+📱 SAMSUNG GALAXY S SERIES
+═══════════════════════════════════════════════════════════════
+
+┌─────────────────────────────┬──────────┬──────────┐
+│ MODEL                       │ SZKŁO    │ ETUI     │
+├─────────────────────────────┼──────────┼──────────┤
+│ Samsung Galaxy S24 Ultra    │ SA1U1    │ SA1U2    │
+│ Samsung Galaxy S24+         │ SA2U1    │ SA2U2    │
+│ Samsung Galaxy S24          │ SA3U1    │ SA3U2    │
+├─────────────────────────────┼──────────┼──────────┤
+│ Samsung Galaxy S23 Ultra    │ SB1U1    │ SB1U2    │
+│ Samsung Galaxy S23+         │ SB2U1    │ SB2U2    │
+│ Samsung Galaxy S23          │ SB3U1    │ SB3U2    │
+├─────────────────────────────┼──────────┼──────────┤
+│ Samsung Galaxy S22 Ultra    │ SC1U1    │ SC1U2    │
+│ Samsung Galaxy S22+         │ SC2U1    │ SC2U2    │
+│ Samsung Galaxy S22          │ SC3U1    │ SC3U2    │
+├─────────────────────────────┼──────────┼──────────┤
+│ Samsung Galaxy S21 Ultra    │ SD1U1    │ SD1U2    │
+│ Samsung Galaxy S21+         │ SD2U1    │ SD2U2    │
+│ Samsung Galaxy S21          │ SD3U1    │ SD3U2    │
+├─────────────────────────────┼──────────┼──────────┤
+│ Samsung Galaxy S20 Ultra    │ SE1U1    │ SE1U2    │
+│ Samsung Galaxy S20+         │ SE2U1    │ SE2U2    │
+│ Samsung Galaxy S20          │ SE3U1    │ SE3U2    │
+└─────────────────────────────┴──────────┴──────────┘
+
+
+📱 SAMSUNG GALAXY A SERIES
+═══════════════════════════════════════════════════════════════
+
+┌─────────────────────────────┬──────────┬──────────┐
+│ MODEL                       │ SZKŁO    │ ETUI     │
+├─────────────────────────────┼──────────┼──────────┤
+│ Samsung Galaxy A54          │ AA1U1    │ AA1U2    │
+│ Samsung Galaxy A53          │ AA2U1    │ AA2U2    │
+│ Samsung Galaxy A52          │ AA3U1    │ AA3U2    │
+│ Samsung Galaxy A34          │ AA4U1    │ AA4U2    │
+│ Samsung Galaxy A33          │ AA5U1    │ AA5U2    │
+└─────────────────────────────┴──────────┴──────────┘
+
+
+📱 SAMSUNG GALAXY Z SERIES (SKŁADANE)
+═══════════════════════════════════════════════════════════════
+
+┌─────────────────────────────┬──────────┬──────────┐
+│ MODEL                       │ SZKŁO    │ ETUI     │
+├─────────────────────────────┼──────────┼──────────┤
+│ Samsung Galaxy Z Fold 5     │ ZF1U1    │ ZF1U2    │
+│ Samsung Galaxy Z Fold 4     │ ZF2U1    │ ZF2U2    │
+│ Samsung Galaxy Z Fold 3     │ ZF3U1    │ ZF3U2    │
+├─────────────────────────────┼──────────┼──────────┤
+│ Samsung Galaxy Z Flip 5     │ ZP1U1    │ ZP1U2    │
+│ Samsung Galaxy Z Flip 4     │ ZP2U1    │ ZP2U2    │
+│ Samsung Galaxy Z Flip 3     │ ZP3U1    │ ZP3U2    │
+└─────────────────────────────┴──────────┴──────────┘
+
+
+📱 GOOGLE PIXEL
+═══════════════════════════════════════════════════════════════
+
+┌─────────────────────────────┬──────────┬──────────┐
+│ MODEL                       │ SZKŁO    │ ETUI     │
+├─────────────────────────────┼──────────┼──────────┤
+│ Google Pixel 8 Pro          │ GP1U1    │ GP1U2    │
+│ Google Pixel 8              │ GP2U1    │ GP2U2    │
+│ Google Pixel 7 Pro          │ GP3U1    │ GP3U2    │
+│ Google Pixel 7              │ GP4U1    │ GP4U2    │
+│ Google Pixel 6 Pro          │ GP5U1    │ GP5U2    │
+│ Google Pixel 6              │ GP6U1    │ GP6U2    │
+│ Google Pixel 5              │ GP7U1    │ GP7U2    │
+└─────────────────────────────┴──────────┴──────────┘
+
+
+📱 XIAOMI
+═══════════════════════════════════════════════════════════════
+
+┌─────────────────────────────┬──────────┬──────────┐
+│ MODEL                       │ SZKŁO    │ ETUI     │
+├─────────────────────────────┼──────────┼──────────┤
+│ Xiaomi 14 Pro               │ XM1U1    │ XM1U2    │
+│ Xiaomi 14                   │ XM2U1    │ XM2U2    │
+│ Xiaomi 13 Ultra             │ XM3U1    │ XM3U2    │
+│ Xiaomi 13 Pro               │ XM4U1    │ XM4U2    │
+│ Xiaomi 13                   │ XM5U1    │ XM5U2    │
+│ Xiaomi 12 Pro               │ XM6U1    │ XM6U2    │
+│ Xiaomi 12                   │ XM7U1    │ XM7U2    │
+│ Xiaomi Mi 11                │ XM8U1    │ XM8U2    │
+│ Xiaomi Mi 10T Pro           │ XM9U1    │ XM9U2    │
+└─────────────────────────────┴──────────┴──────────┘
+
+
+📱 ONEPLUS
+═══════════════════════════════════════════════════════════════
+
+┌─────────────────────────────┬──────────┬──────────┐
+│ MODEL                       │ SZKŁO    │ ETUI     │
+├─────────────────────────────┼──────────┼──────────┤
+│ OnePlus 12                  │ OP1U1    │ OP1U2    │
+│ OnePlus 11                  │ OP2U1    │ OP2U2    │
+│ OnePlus 10 Pro              │ OP3U1    │ OP3U2    │
+│ OnePlus 9 Pro               │ OP4U1    │ OP4U2    │
+│ OnePlus 9                   │ OP5U1    │ OP5U2    │
+│ OnePlus 8 Pro               │ OP6U1    │ OP6U2    │
+│ OnePlus 8                   │ OP7U1    │ OP7U2    │
+└─────────────────────────────┴──────────┴──────────┘
+
+
+📱 HUAWEI
+═══════════════════════════════════════════════════════════════
+
+┌─────────────────────────────┬──────────┬──────────┐
+│ MODEL                       │ SZKŁO    │ ETUI     │
+├─────────────────────────────┼──────────┼──────────┤
+│ Huawei P40 Pro              │ HW1U1    │ HW1U2    │
+│ Huawei P40                  │ HW2U1    │ HW2U2    │
+│ Huawei P30 Pro              │ HW3U1    │ HW3U2    │
+│ Huawei P30                  │ HW4U1    │ HW4U2    │
+│ Huawei P Smart 2019         │ HW5U1    │ HW5U2    │
+└─────────────────────────────┴──────────┴──────────┘
+
+
+═══════════════════════════════════════════════════════════════
+📊 PODSUMOWANIE
+═══════════════════════════════════════════════════════════════
+
+Łączna liczba obsługiwanych modeli: 80+
+
+iPhone:                 27 modeli
+Samsung Galaxy S:       15 modeli
+Samsung Galaxy A:        5 modeli
+Samsung Galaxy Z:        6 modeli
+Google Pixel:            7 modeli
+Xiaomi:                  9 modeli
+OnePlus:                 7 modeli
+Huawei:                  5 modeli
+
+═══════════════════════════════════════════════════════════════
+🔍 SZYBKIE WYSZUKIWANIE
+═══════════════════════════════════════════════════════════════
+
+PREFIKSY KODÓW:
+
+A___ = iPhone 17 series
+B___ = iPhone 16 series
+C___ = iPhone 15 series
+D___ = iPhone 14 series
+E___ = iPhone 13 series
+F___ = iPhone 12 series
+G___ = iPhone 11 series
+
+SA__ = Samsung S24 series
+SB__ = Samsung S23 series
+SC__ = Samsung S22 series
+SD__ = Samsung S21 series
+SE__ = Samsung S20 series
+
+AA__ = Samsung A series
+ZF__ = Samsung Z Fold series
+ZP__ = Samsung Z Flip series
+
+GP__ = Google Pixel
+XM__ = Xiaomi
+OP__ = OnePlus
+HW__ = Huawei
+
+SUFIKSY:
+
+___U1 = Szkło ochronne
+___U2 = Etui
+
+═══════════════════════════════════════════════════════════════
+💡 PRZYKŁADY UŻYCIA
+═══════════════════════════════════════════════════════════════
+
+Klient: "Potrzebuję szkło na iPhone 16 Pro"
+Kod: B2U1
+
+Klient: "Etui na Samsung S24 Ultra"
+Kod: SA1U2
+
+Klient: "Szkło i etui na Pixel 8 Pro"
+Kody: GP1U1 (szkło) + GP1U2 (etui)
+
+Klient: "Akcesoria na OnePlus 11"
+Kody: OP2U1 (szkło) + OP2U2 (etui)
+
+═══════════════════════════════════════════════════════════════
+
+Wygenerowano: 2025-01-15
+Wersja: SHARK v18
+System: Automatyczne rozpoznawanie urządzeń mobilnych
+
+═══════════════════════════════════════════════════════════════
