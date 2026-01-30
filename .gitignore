@@ -17,3 +17,6 @@ shark_brain_v18.json.tmp
 *.swo
 .idea/
 .vscode/
+
+# Matomo cache
+matomo_mobiles.yml
