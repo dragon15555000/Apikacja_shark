@@ -45,6 +45,7 @@ KROK 2: GitHub
 → git init
 → git add .
 → git commit -m "Initial commit"
+
 → git push do GitHub
 
 KROK 3: Render.com
