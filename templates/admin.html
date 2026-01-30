@@ -56,6 +56,18 @@
                 <h3>💾 Typ Bazy</h3>
                 <div class="value" id="storageType" style="font-size: 20px;">-</div>
             </div>
+            <div class="stat-card">
+                <h3>✅ Rozpoznane</h3>
+                <div class="value" id="successCount" style="color: #27ae60;">-</div>
+            </div>
+            <div class="stat-card">
+                <h3>❌ Nierozpoznane</h3>
+                <div class="value" id="failedCount" style="color: #e74c3c;">-</div>
+            </div>
+            <div class="stat-card">
+                <h3>📈 Skuteczność</h3>
+                <div class="value" id="successRate" style="color: #667eea;">-</div>
+            </div>
         </div>
 
         <div class="section">
@@ -76,6 +88,45 @@
             </div>
 
             <div id="matomoResult" style="display: none; margin-top: 20px;"></div>
+        </div>
+
+        <div class="section">
+            <h2>☁️ Synchronizacja MongoDB</h2>
+            <div class="alert alert-warning">
+                <strong>⚠️ Ważne:</strong> Synchronizuj wszystkie dane do MongoDB Atlas, aby zachować je po aktualizacji aplikacji na Render.
+            </div>
+            <button class="btn btn-primary" onclick="syncToMongoDB()" style="font-size: 16px; padding: 12px 24px;">
+                ☁️ Synchronizuj Wszystko do MongoDB
+            </button>
+            <div id="syncStatus" style="margin-top: 15px; font-weight: 600;"></div>
+        </div>
+
+        <div class="section">
+            <h2>📊 Logi Rozpoznań Telefonów</h2>
+            <div class="alert alert-info">
+                <strong>ℹ️ Info:</strong> Historia rozpoznanych i nierozpoznanych urządzeń. Ostatnie 100 wpisów.
+            </div>
+            <button class="btn" onclick="loadDetectionLogs()">🔄 Odśwież Logi</button>
+            <button class="btn btn-danger" onclick="clearDetectionLogs()" style="margin-left: 10px;">🗑️ Wyczyść Logi</button>
+
+            <div class="scrollable" style="margin-top: 20px;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Data/Czas</th>
+                            <th>Status</th>
+                            <th>Model</th>
+                            <th>Pewność</th>
+                            <th>Metoda</th>
+                            <th>Fingerprint</th>
+                            <th>GPU</th>
+                        </tr>
+                    </thead>
+                    <tbody id="detectionLogsTableBody">
+                        <tr><td colspan="7" style="text-align: center; color: #999;">Ładowanie...</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
 
         <div class="section">
@@ -260,6 +311,91 @@
 
         loadBrainData();
         loadVerifiedModels();
+        loadDetectionLogs();
+
+        // === SYNCHRONIZACJA MONGODB ===
+
+        async function syncToMongoDB() {
+            const statusDiv = document.getElementById('syncStatus');
+            statusDiv.innerHTML = '<span style="color: #f39c12;">⏳ Synchronizacja w toku...</span>';
+
+            try {
+                const res = await fetch('/admin/api/sync-to-mongodb', { method: 'POST' });
+                const data = await res.json();
+
+                if (data.status === 'OK') {
+                    let details = '<br><br><strong>Zsynchronizowane dane:</strong><br>';
+                    details += '• Static Identifiers: ' + data.results.static_identifiers + ' modeli<br>';
+                    details += '• Android Identifiers: ' + data.results.android_identifiers + ' modeli<br>';
+                    details += '• Accessory Codes: ' + data.results.accessory_codes + ' modeli<br>';
+                    details += '• External DB (Matomo): ' + data.results.external_db + ' modeli<br>';
+                    details += '• Brain (AI): ' + data.results.brain + ' sygnatur<br>';
+
+                    statusDiv.innerHTML = '<span style="color: #27ae60;">✅ ' + data.message + details + '</span>';
+                } else {
+                    statusDiv.innerHTML = '<span style="color: #e74c3c;">❌ Błąd: ' + data.error + '</span>';
+                }
+            } catch (e) {
+                statusDiv.innerHTML = '<span style="color: #e74c3c;">❌ Błąd: ' + e.message + '</span>';
+            }
+        }
+
+        // === LOGI ROZPOZNAŃ ===
+
+        async function loadDetectionLogs() {
+            try {
+                const res = await fetch('/admin/api/detection-logs');
+                const data = await res.json();
+
+                if (data.status === 'OK') {
+                    // Aktualizuj statystyki
+                    document.getElementById('successCount').innerText = data.stats.success;
+                    document.getElementById('failedCount').innerText = data.stats.failed;
+                    document.getElementById('successRate').innerText = data.stats.success_rate + '%';
+
+                    const tbody = document.getElementById('detectionLogsTableBody');
+
+                    if (data.logs.length > 0) {
+                        tbody.innerHTML = data.logs.map(log => {
+                            const timestamp = new Date(log.timestamp).toLocaleString('pl-PL');
+                            const statusBadge = log.status.startsWith('SUCCESS')
+                                ? '<span class="badge" style="background: #e8f5e9; color: #388e3c;">✅ ' + log.status + '</span>'
+                                : '<span class="badge" style="background: #ffebee; color: #c62828;">❌ ' + log.status + '</span>';
+                            const model = log.model || (log.suggestions ? log.suggestions.join(', ') : 'N/A');
+                            const confidence = log.confidence ? log.confidence + '%' : '-';
+                            const fingerprint = log.fingerprint || 'N/A';
+                            const gpu = log.gpu ? log.gpu.substring(0, 30) : 'N/A';
+
+                            return '<tr>' +
+                                '<td style="font-size: 11px;">' + timestamp + '</td>' +
+                                '<td>' + statusBadge + '</td>' +
+                                '<td style="font-weight: 600;">' + model + '</td>' +
+                                '<td>' + confidence + '</td>' +
+                                '<td><span class="badge badge-primary">' + log.method + '</span></td>' +
+                                '<td style="font-size: 11px;">' + fingerprint + '</td>' +
+                                '<td style="font-size: 10px;">' + gpu + '</td>' +
+                                '</tr>';
+                        }).join('');
+                    } else {
+                        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #999;">Brak logów</td></tr>';
+                    }
+                }
+            } catch (e) {
+                console.error('Error loading detection logs:', e);
+            }
+        }
+
+        async function clearDetectionLogs() {
+            if (!confirm('⚠️ Wyczyścić WSZYSTKIE logi rozpoznań?\\n\\nTa operacja jest nieodwracalna!')) return;
+            try {
+                const res = await fetch('/admin/api/detection-logs/clear', { method: 'POST' });
+                const data = await res.json();
+                alert(data.message);
+                loadDetectionLogs();
+            } catch (e) {
+                alert('Błąd: ' + e.message);
+            }
+        }
 
         // === ZARZĄDZANIE ZWERYFIKOWANYMI MODELAMI ===
 
