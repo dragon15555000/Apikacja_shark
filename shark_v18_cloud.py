@@ -505,6 +505,19 @@ def index():
     """Serve main HTML page."""
     return render_template('index.html')
 
+@app.route('/version')
+def version():
+    """Endpoint diagnostyczny - sprawdź wersję kodu."""
+    import sys
+    has_find_top_3 = 'find_top_3_matches' in dir(sys.modules[__name__])
+    return jsonify({
+        "version": "v18.18",
+        "python": sys.version,
+        "has_find_top_3_matches": has_find_top_3,
+        "mongodb": USE_MONGODB,
+        "collections_initialized": detection_logs_collection is not None if USE_MONGODB else False
+    })
+
 @app.route('/api/check_brain', methods=['POST'])
 @limiter.limit("30 per minute")
 @validate_json('w', 'h', 'hz', 'gpu', 'canvasHash', 'dpr', 'ram', 'cores')
