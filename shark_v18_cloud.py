@@ -1,4 +1,4 @@
-﻿# SHARK v18.18 - MongoDB collection fix + cache clear
+﻿# SHARK v18.22 - HOTFIX: Przywrócono iPhone 11/12/13 do HEURISTIC_DB
 import json
 import logging
 import os
@@ -177,6 +177,15 @@ HEURISTIC_DB = {
     "iPhone 15 Pro Max": {"w": 430, "h": 932, "hz": 120, "gpu": "apple gpu", "dpr": 3.0, "ram": -1},
     "iPhone 15 Pro": {"w": 393, "h": 852, "hz": 120, "gpu": "apple gpu", "dpr": 3.0, "ram": -1},
     "iPhone 14 Pro": {"w": 393, "h": 852, "hz": 120, "gpu": "apple gpu", "dpr": 3.0, "ram": -1},
+    "iPhone 13": {"w": 390, "h": 844, "hz": 60, "gpu": "apple gpu", "dpr": 3.0, "ram": -1},
+    "iPhone 13 Pro": {"w": 390, "h": 844, "hz": 120, "gpu": "apple gpu", "dpr": 3.0, "ram": -1},
+    "iPhone 13 Pro Max": {"w": 428, "h": 926, "hz": 120, "gpu": "apple gpu", "dpr": 3.0, "ram": -1},
+    "iPhone 12": {"w": 390, "h": 844, "hz": 60, "gpu": "apple gpu", "dpr": 3.0, "ram": -1},
+    "iPhone 12 Pro": {"w": 390, "h": 844, "hz": 60, "gpu": "apple gpu", "dpr": 3.0, "ram": -1},
+    "iPhone 12 Pro Max": {"w": 428, "h": 926, "hz": 60, "gpu": "apple gpu", "dpr": 3.0, "ram": -1},
+    "iPhone 11": {"w": 414, "h": 896, "hz": 60, "gpu": "apple gpu", "dpr": 2.0, "ram": -1},
+    "iPhone 11 Pro": {"w": 375, "h": 812, "hz": 60, "gpu": "apple gpu", "dpr": 3.0, "ram": -1},
+    "iPhone 11 Pro Max": {"w": 414, "h": 896, "hz": 60, "gpu": "apple gpu", "dpr": 3.0, "ram": -1},
 
     # Samsung S24 Ultra - DOMYŚLNY + Display Zoom variants
     "Samsung Galaxy S24 Ultra": {"w": 384, "h": 824, "hz": 120, "gpu": "adreno 750", "dpr": 3.75, "ram": 8},
@@ -563,7 +572,7 @@ def version():
     import sys
     has_find_top_3 = 'find_top_3_matches' in dir(sys.modules[__name__])
     return jsonify({
-        "version": "v18.18",
+        "version": "v18.22",
         "python": sys.version,
         "has_find_top_3_matches": has_find_top_3,
         "mongodb": USE_MONGODB,
