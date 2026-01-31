@@ -624,7 +624,9 @@ def check_brain():
             })
 
         # Priorytet 3: Baza AI (fingerprint) - NOWA SYGNATURA Z DPR I RAM
-        signature = f"{width}_{height}_{dpr}_{ram}_{refresh_rate}_{gpu}_{canvas_hash}"
+        # Zaokrąglij DPR do 2 miejsc po przecinku (3.0000001192092896 → 3.0)
+        dpr_rounded = round(float(dpr), 2)
+        signature = f"{width}_{height}_{dpr_rounded}_{ram}_{refresh_rate}_{gpu}_{canvas_hash}"
 
         if signature in BRAIN:
             models = BRAIN[signature]
@@ -799,7 +801,9 @@ def learn():
         if not isinstance(cores, (int, float)) or cores < -1 or cores > 100:
             return jsonify({"error": "Invalid cores value"}), 400
 
-        signature = f"{width}_{height}_{dpr}_{ram}_{refresh_rate}_{gpu}_{canvas_hash}"
+        # Zaokrąglij DPR do 2 miejsc po przecinku (musi być identyczne jak w check_brain!)
+        dpr_rounded = round(float(dpr), 2)
+        signature = f"{width}_{height}_{dpr_rounded}_{ram}_{refresh_rate}_{gpu}_{canvas_hash}"
 
         if signature not in BRAIN and len(BRAIN) >= MAX_BRAIN_SIGNATURES:
             oldest_signature = next(iter(BRAIN))
