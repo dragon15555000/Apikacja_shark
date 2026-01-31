@@ -371,7 +371,31 @@ def find_top_3_matches(width, height, refresh_rate, gpu, dpr, ram, cores):
     if is_simulation:
         logger.warning(f"âš ď¸Ź SYMULACJA WYKRYTA! GPU komputera: {gpu[:50]}")
 
-    for model_name, specs in HEURISTIC_DB.items():
+    # Pobierz zweryfikowane modele z MongoDB (jeśli dostępne)
+    verified_models = {}
+    if USE_MONGODB and verified_models_collection is not None:
+        try:
+            models_cursor = verified_models_collection.find({})
+            for model_doc in models_cursor:
+                name = model_doc.get('system_name') or model_doc.get('name')
+                if name:
+                    verified_models[name] = {
+                        "w": model_doc.get('w'),
+                        "h": model_doc.get('h'),
+                        "dpr": model_doc.get('dpr'),
+                        "ram": model_doc.get('ram', -1),
+                        "hz": model_doc.get('hz'),
+                        "gpu": model_doc.get('gpu', '').lower()
+                    }
+        except Exception as e:
+            logger.warning(f"Error loading verified models: {e}")
+
+    # Połącz HEURISTIC_DB z verified_models (verified ma priorytet)
+    all_models = {**HEURISTIC_DB, **verified_models}
+
+    logger.info(f"🔍 Searching in {len(all_models)} models ({len(HEURISTIC_DB)} heuristic + {len(verified_models)} verified)")
+
+    for model_name, specs in all_models.items():
         score = 0
         reasons = []
 
