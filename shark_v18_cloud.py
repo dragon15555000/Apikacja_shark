@@ -1,4 +1,4 @@
-import json
+﻿import json
 import logging
 import os
 import re
@@ -10,16 +10,16 @@ from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
-# Ładowanie zmiennych środowiskowych z pliku .env (jeśli istnieje)
+# Ĺadowanie zmiennych Ĺ›rodowiskowych z pliku .env (jeĹ›li istnieje)
 if os.path.exists('.env'):
-    print("📄 Loading environment variables from .env file...")
+    print("đź“„ Loading environment variables from .env file...")
     with open('.env', 'r', encoding='utf-8') as f:
         for line in f:
             line = line.strip()
             if line and not line.startswith('#') and '=' in line:
                 key, value = line.split('=', 1)
                 os.environ[key.strip()] = value.strip()
-    print("✅ Environment variables loaded from .env")
+    print("âś… Environment variables loaded from .env")
 
 # MongoDB (opcjonalnie)
 try:
@@ -28,7 +28,7 @@ try:
     MONGODB_AVAILABLE = True
 except ImportError:
     MONGODB_AVAILABLE = False
-    print("⚠️ PyMongo not installed. Using JSON file storage.")
+    print("âš ď¸Ź PyMongo not installed. Using JSON file storage.")
 
 # --- KONFIGURACJA ---
 LOG_FILE = 'shark_logs_v18.csv'
@@ -43,12 +43,12 @@ EXTERNAL_DB = {}
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# --- MONGODB SETUP (jeśli dostępne) ---
+# --- MONGODB SETUP (jeĹ›li dostÄ™pne) ---
 MONGODB_URI = os.environ.get('MONGODB_URI', None)
 MONGODB_DB = os.environ.get('MONGODB_DB', 'shark_db')
 USE_MONGODB = MONGODB_AVAILABLE and MONGODB_URI
 
-# Inicjalizacja kolekcji MongoDB (domyślnie None)
+# Inicjalizacja kolekcji MongoDB (domyĹ›lnie None)
 db = None
 brain_collection = None
 logs_collection = None
@@ -68,21 +68,21 @@ if USE_MONGODB:
         logs_collection = db['logs']
         verified_models_collection = db['verified_models']
         detection_logs_collection = db['detection_logs']
-        # NOWE: Kolekcje dla wszystkich słowników
+        # NOWE: Kolekcje dla wszystkich sĹ‚ownikĂłw
         external_db_collection = db['external_db']
         static_identifiers_collection = db['static_identifiers']
         android_identifiers_collection = db['android_identifiers']
         accessory_codes_collection = db['accessory_codes']
-        logger.info("✅ MongoDB connected successfully")
+        logger.info("âś… MongoDB connected successfully")
     except Exception as e:
-        logger.error(f"❌ MongoDB connection failed: {e}")
+        logger.error(f"âťŚ MongoDB connection failed: {e}")
         USE_MONGODB = False
-        # Kolekcje już są ustawione na None globalnie
+        # Kolekcje juĹĽ sÄ… ustawione na None globalnie
 else:
-    logger.info("📁 Using JSON file storage (no MongoDB)")
-    # Kolekcje już są ustawione na None globalnie
+    logger.info("đź“ Using JSON file storage (no MongoDB)")
+    # Kolekcje juĹĽ sÄ… ustawione na None globalnie
 
-# --- IDENTYFIKATORY URZĄDZEŃ ---
+# --- IDENTYFIKATORY URZÄ„DZEĹ ---
 STATIC_IDENTIFIERS = {
     "iPhone18,1": "iPhone 17 Pro", "iPhone18,2": "iPhone 17 Pro Max",
     "iPhone18,3": "iPhone 17", "iPhone18,4": "iPhone Air",
@@ -171,13 +171,13 @@ def load_data():
     """Load all data from MongoDB (priority) or JSON files (fallback)."""
     global BRAIN, EXTERNAL_DB, STATIC_IDENTIFIERS, ANDROID_IDENTIFIERS, ACCESSORY_CODES
 
-    # 1. Ładowanie BRAIN
+    # 1. Ĺadowanie BRAIN
     try:
         if USE_MONGODB:
             brain_data = brain_collection.find_one({'_id': 'brain_v18'})
             if brain_data:
                 BRAIN = brain_data.get('data', {})
-                logger.info(f"✅ Brain loaded from MongoDB: {len(BRAIN)} signatures")
+                logger.info(f"âś… Brain loaded from MongoDB: {len(BRAIN)} signatures")
             else:
                 BRAIN = {}
                 logger.info("No brain data in MongoDB, starting fresh")
@@ -192,40 +192,40 @@ def load_data():
         logger.error(f"Error loading brain: {e}")
         BRAIN = {}
 
-    # 2. Ładowanie STATIC_IDENTIFIERS z MongoDB (tylko jeśli istnieje w MongoDB)
+    # 2. Ĺadowanie STATIC_IDENTIFIERS z MongoDB (tylko jeĹ›li istnieje w MongoDB)
     if USE_MONGODB:
         try:
             static_data = static_identifiers_collection.find_one({'_id': 'static_identifiers'})
             if static_data and 'data' in static_data:
-                # Merge z oryginalnymi danymi zamiast nadpisywać
+                # Merge z oryginalnymi danymi zamiast nadpisywaÄ‡
                 STATIC_IDENTIFIERS.update(static_data['data'])
-                logger.info(f"✅ Static Identifiers merged from MongoDB: {len(STATIC_IDENTIFIERS)} models")
+                logger.info(f"âś… Static Identifiers merged from MongoDB: {len(STATIC_IDENTIFIERS)} models")
         except Exception as e:
-            logger.warning(f"⚠️ Error loading Static Identifiers from MongoDB: {e}")
+            logger.warning(f"âš ď¸Ź Error loading Static Identifiers from MongoDB: {e}")
 
-    # 3. Ładowanie ANDROID_IDENTIFIERS z MongoDB (tylko jeśli istnieje w MongoDB)
+    # 3. Ĺadowanie ANDROID_IDENTIFIERS z MongoDB (tylko jeĹ›li istnieje w MongoDB)
     if USE_MONGODB:
         try:
             android_data = android_identifiers_collection.find_one({'_id': 'android_identifiers'})
             if android_data and 'data' in android_data:
-                # Merge z oryginalnymi danymi zamiast nadpisywać
+                # Merge z oryginalnymi danymi zamiast nadpisywaÄ‡
                 ANDROID_IDENTIFIERS.update(android_data['data'])
-                logger.info(f"✅ Android Identifiers merged from MongoDB: {len(ANDROID_IDENTIFIERS)} models")
+                logger.info(f"âś… Android Identifiers merged from MongoDB: {len(ANDROID_IDENTIFIERS)} models")
         except Exception as e:
-            logger.warning(f"⚠️ Error loading Android Identifiers from MongoDB: {e}")
+            logger.warning(f"âš ď¸Ź Error loading Android Identifiers from MongoDB: {e}")
 
-    # 4. Ładowanie ACCESSORY_CODES z MongoDB (tylko jeśli istnieje w MongoDB)
+    # 4. Ĺadowanie ACCESSORY_CODES z MongoDB (tylko jeĹ›li istnieje w MongoDB)
     if USE_MONGODB:
         try:
             accessory_data = accessory_codes_collection.find_one({'_id': 'accessory_codes'})
             if accessory_data and 'data' in accessory_data:
-                # Merge z oryginalnymi danymi zamiast nadpisywać
+                # Merge z oryginalnymi danymi zamiast nadpisywaÄ‡
                 ACCESSORY_CODES.update(accessory_data['data'])
-                logger.info(f"✅ Accessory Codes merged from MongoDB: {len(ACCESSORY_CODES)} models")
+                logger.info(f"âś… Accessory Codes merged from MongoDB: {len(ACCESSORY_CODES)} models")
         except Exception as e:
-            logger.warning(f"⚠️ Error loading Accessory Codes from MongoDB: {e}")
+            logger.warning(f"âš ď¸Ź Error loading Accessory Codes from MongoDB: {e}")
 
-    # 5. Ładowanie EXTERNAL_DB (Matomo) z MongoDB lub pliku
+    # 5. Ĺadowanie EXTERNAL_DB (Matomo) z MongoDB lub pliku
     EXTERNAL_DB = {**STATIC_IDENTIFIERS, **ANDROID_IDENTIFIERS}
 
     if USE_MONGODB:
@@ -234,7 +234,7 @@ def load_data():
             if external_data and 'data' in external_data:
                 loaded_db = external_data['data']
                 EXTERNAL_DB.update(loaded_db)
-                logger.info(f"✅ External DB loaded from MongoDB: {len(EXTERNAL_DB)} total models")
+                logger.info(f"âś… External DB loaded from MongoDB: {len(EXTERNAL_DB)} total models")
             else:
                 logger.info("No External DB in MongoDB, will try JSON file")
                 # Fallback do pliku JSON
@@ -243,23 +243,23 @@ def load_data():
                     with open(external_db_file, 'r', encoding='utf-8') as f:
                         loaded_db = json.load(f)
                         EXTERNAL_DB.update(loaded_db)
-                        logger.info(f"✅ External DB loaded from file: {len(EXTERNAL_DB)} models")
+                        logger.info(f"âś… External DB loaded from file: {len(EXTERNAL_DB)} models")
         except Exception as e:
             logger.error(f"Error loading External DB: {e}")
     else:
-        # Tryb JSON - załaduj z pliku
+        # Tryb JSON - zaĹ‚aduj z pliku
         external_db_file = 'shark_external_db.json'
         if os.path.exists(external_db_file):
             try:
                 with open(external_db_file, 'r', encoding='utf-8') as f:
                     loaded_db = json.load(f)
                     EXTERNAL_DB.update(loaded_db)
-                    logger.info(f"✅ External DB loaded from file: {len(EXTERNAL_DB)} models")
+                    logger.info(f"âś… External DB loaded from file: {len(EXTERNAL_DB)} models")
             except Exception as e:
                 logger.error(f"Error loading external DB: {e}")
         else:
-            logger.warning(f"⚠️ External DB file not found. Using default models only ({len(EXTERNAL_DB)} models)")
-            logger.info("💡 Run 'python setup_database.py' to import 1000+ models from Matomo")
+            logger.warning(f"âš ď¸Ź External DB file not found. Using default models only ({len(EXTERNAL_DB)} models)")
+            logger.info("đź’ˇ Run 'python setup_database.py' to import 1000+ models from Matomo")
 
 def save_brain():
     """Save brain data to MongoDB or JSON file."""
@@ -313,7 +313,7 @@ def parse_device_from_ua(ua):
         if match_motorola:
             return match_motorola.group(1)
         if 'motorola' in ua.lower() or 'moto' in ua.lower():
-            # Próbuj wyciągnąć nazwę modelu
+            # PrĂłbuj wyciÄ…gnÄ…Ä‡ nazwÄ™ modelu
             match_moto_name = re.search(r'(moto [a-z0-9 ]+|edge [a-z0-9 ]+|razr [a-z0-9 ]+)', ua.lower())
             if match_moto_name:
                 return match_moto_name.group(1).strip()
@@ -326,11 +326,11 @@ def find_top_3_matches(width, height, refresh_rate, gpu, dpr, ram, cores):
     Find top 3 best matching models using Weighted Scoring Algorithm with OS Segmentation.
 
     TESTOWANIE:
-    - Chrome DevTools (F12) → Tryb responsywny → Edit → Dodaj własne urządzenie
-    - Ustaw User Agent, DPR, viewport - możesz symulować dowolny telefon
-    - Sprawdź logi w konsoli serwera, aby zobaczyć szczegóły punktacji
+    - Chrome DevTools (F12) â†’ Tryb responsywny â†’ Edit â†’ Dodaj wĹ‚asne urzÄ…dzenie
+    - Ustaw User Agent, DPR, viewport - moĹĽesz symulowaÄ‡ dowolny telefon
+    - SprawdĹş logi w konsoli serwera, aby zobaczyÄ‡ szczegĂłĹ‚y punktacji
     """
-    # Baza heurystyczna - SPRAWDZONE PARAMETRY z rzeczywistych urządzeń
+    # Baza heurystyczna - SPRAWDZONE PARAMETRY z rzeczywistych urzÄ…dzeĹ„
     HEURISTIC_DB = {
         # iPhone - SPRAWDZONE (z JSON)
         "iPhone 16 Pro Max": {"w": 440, "h": 956, "hz": 120, "gpu": "apple gpu", "dpr": 3.0, "ram": -1},
@@ -363,29 +363,29 @@ def find_top_3_matches(width, height, refresh_rate, gpu, dpr, ram, cores):
     # OS Segmentation - wykryj iOS vs Android
     is_ios = "apple" in gpu_lower or ram == -1
 
-    # Wykryj symulację/emulację (GPU komputera zamiast telefonu)
+    # Wykryj symulacjÄ™/emulacjÄ™ (GPU komputera zamiast telefonu)
     is_simulation = any(keyword in gpu_lower for keyword in ["intel", "nvidia", "amd", "angle", "swiftshader", "mesa"])
 
-    logger.info(f"🔍 Weighted Scoring - OS: {'iOS' if is_ios else 'Android'}, DPR: {dpr}, RAM: {ram}, GPU: {gpu}")
+    logger.info(f"đź”Ť Weighted Scoring - OS: {'iOS' if is_ios else 'Android'}, DPR: {dpr}, RAM: {ram}, GPU: {gpu}")
     if is_simulation:
-        logger.warning(f"⚠️ SYMULACJA WYKRYTA! GPU komputera: {gpu[:50]}")
+        logger.warning(f"âš ď¸Ź SYMULACJA WYKRYTA! GPU komputera: {gpu[:50]}")
 
     for model_name, specs in HEURISTIC_DB.items():
         score = 0
         reasons = []
 
         # 1. GPU (Waga: 40 Android / 0 iOS)
-        # UWAGA: Normalizacja GPU - różne przeglądarki zwracają różne formaty
-        # "Adreno (TM) 740" vs "Adreno 740 @ 680 MHz" - szukamy części wspólnej
+        # UWAGA: Normalizacja GPU - rĂłĹĽne przeglÄ…darki zwracajÄ… rĂłĹĽne formaty
+        # "Adreno (TM) 740" vs "Adreno 740 @ 680 MHz" - szukamy czÄ™Ĺ›ci wspĂłlnej
         if not is_ios and specs["gpu"] and gpu_lower:
             spec_gpu_lower = specs["gpu"].lower()
-            # Wyciągnij kluczowe słowa (np. "adreno 740" → ["adreno", "740"])
+            # WyciÄ…gnij kluczowe sĹ‚owa (np. "adreno 740" â†’ ["adreno", "740"])
             spec_gpu_parts = spec_gpu_lower.replace("(tm)", "").replace("@", " ").split()
-            # Sprawdź czy wszystkie kluczowe części są w GPU użytkownika
+            # SprawdĹş czy wszystkie kluczowe czÄ™Ĺ›ci sÄ… w GPU uĹĽytkownika
             if all(part in gpu_lower for part in spec_gpu_parts if len(part) > 2):
                 score += 40
                 reasons.append(f"GPU: {specs['gpu']}")
-            # Fallback: prosta zawartość
+            # Fallback: prosta zawartoĹ›Ä‡
             elif spec_gpu_lower in gpu_lower:
                 score += 40
                 reasons.append(f"GPU: {specs['gpu']}")
@@ -393,19 +393,19 @@ def find_top_3_matches(width, height, refresh_rate, gpu, dpr, ram, cores):
         # 2. Viewport Width (Waga: 50 iOS / 20 Android)
         if specs["w"] == width:
             score += 50 if is_ios else 20
-            reasons.append(f"Szerokość: {specs['w']}px")
+            reasons.append(f"SzerokoĹ›Ä‡: {specs['w']}px")
         elif not is_ios and abs(specs["w"] - width) <= 40:
             score += 10
-            reasons.append(f"Szerokość ~{specs['w']}px")
+            reasons.append(f"SzerokoĹ›Ä‡ ~{specs['w']}px")
 
-        # 3. Viewport Height (Waga: 30 iOS / 10 Android) - z tolerancją na pasek adresu
+        # 3. Viewport Height (Waga: 30 iOS / 10 Android) - z tolerancjÄ… na pasek adresu
         if specs["h"] == height:
             score += 30 if is_ios else 10
-            reasons.append(f"Wysokość: {specs['h']}px")
+            reasons.append(f"WysokoĹ›Ä‡: {specs['h']}px")
         elif height < specs["h"] and height > (specs["h"] - 160):
             # Tolerancja na pasek adresu (100-160px)
             score += 25 if is_ios else 8
-            reasons.append(f"Wysokość ~{specs['h']}px (pasek adresu)")
+            reasons.append(f"WysokoĹ›Ä‡ ~{specs['h']}px (pasek adresu)")
 
         # 4. DPR (Waga: 20 iOS / 25 Android) - KLUCZOWE!
         if abs(specs["dpr"] - dpr) < 0.1:
@@ -415,30 +415,30 @@ def find_top_3_matches(width, height, refresh_rate, gpu, dpr, ram, cores):
             score += 10
             reasons.append(f"DPR ~{specs['dpr']}x")
 
-        # 5. Hz (Waga: 5 bonus / -10 kara) - Rozróżnia Pro/Base
+        # 5. Hz (Waga: 5 bonus / -10 kara) - RozrĂłĹĽnia Pro/Base
         if specs["hz"] and refresh_rate:
             if abs(specs["hz"] - refresh_rate) < 5:
                 score += 5
                 reasons.append(f"Hz: {specs['hz']}Hz")
             else:
-                score -= 10  # Kara za niezgodność (np. iPhone 16 vs 15 Pro)
+                score -= 10  # Kara za niezgodnoĹ›Ä‡ (np. iPhone 16 vs 15 Pro)
 
-        # 6. RAM (Waga: 5 Android / 0 iOS) - słaby sygnał
-        # UWAGA: navigator.deviceMemory zaokrągla wartości (12GB → 8GB)
+        # 6. RAM (Waga: 5 Android / 0 iOS) - sĹ‚aby sygnaĹ‚
+        # UWAGA: navigator.deviceMemory zaokrÄ…gla wartoĹ›ci (12GB â†’ 8GB)
         if not is_ios and ram > 0 and specs["ram"] > 0:
-            # Użyj >= zamiast == bo Chrome zaokrągla RAM w dół
+            # UĹĽyj >= zamiast == bo Chrome zaokrÄ…gla RAM w dĂłĹ‚
             if ram >= specs["ram"] or abs(specs["ram"] - ram) <= 2:
                 score += 5
                 reasons.append(f"RAM: ~{specs['ram']}GB")
 
         if score > 0:
-            # Jeśli wykryto symulację, dodaj flagę
+            # JeĹ›li wykryto symulacjÄ™, dodaj flagÄ™
             if is_simulation and score >= 100:
                 # Idealny match ale GPU komputera = prawdopodobnie symulacja
                 matches.append({
                     "model": model_name + " (symulacja?)",
                     "confidence": min(score, 100),
-                    "reasons": reasons + ["⚠️ GPU komputera wykryty"],
+                    "reasons": reasons + ["âš ď¸Ź GPU komputera wykryty"],
                     "raw_score": score,
                     "is_simulation": True
                 })
@@ -452,18 +452,18 @@ def find_top_3_matches(width, height, refresh_rate, gpu, dpr, ram, cores):
                     "is_simulation": False
                 })
 
-    # Sortuj po confidence i zwróć top 3
+    # Sortuj po confidence i zwrĂłÄ‡ top 3
     matches.sort(key=lambda x: x["confidence"], reverse=True)
 
-    # Loguj top 3 z PEŁNYMI szczegółami punktacji
-    logger.info(f"🏆 TOP 3 MATCHES (z {len(matches)} kandydatów):")
+    # Loguj top 3 z PEĹNYMI szczegĂłĹ‚ami punktacji
+    logger.info(f"đźŹ† TOP 3 MATCHES (z {len(matches)} kandydatĂłw):")
     for i, match in enumerate(matches[:3], 1):
-        reasons_str = ', '.join(match['reasons']) if match['reasons'] else 'brak dopasowań'
+        reasons_str = ', '.join(match['reasons']) if match['reasons'] else 'brak dopasowaĹ„'
         logger.info(f"  #{i}: {match['model']} - {match['confidence']}% | Powody: {reasons_str}")
 
-    # Jeśli nie ma dopasowań, zaloguj to
+    # JeĹ›li nie ma dopasowaĹ„, zaloguj to
     if not matches:
-        logger.warning(f"⚠️ BRAK DOPASOWAŃ! Parametry: W={width}, H={height}, DPR={dpr}, RAM={ram}, Hz={refresh_rate}, GPU={gpu[:30]}")
+        logger.warning(f"âš ď¸Ź BRAK DOPASOWAĹ! Parametry: W={width}, H={height}, DPR={dpr}, RAM={ram}, Hz={refresh_rate}, GPU={gpu[:30]}")
 
     return matches[:3]
 
@@ -540,12 +540,12 @@ def check_brain():
         user_agent = d.get('userAgent', '')
 
         # TYMCZASOWE LOGOWANIE - do debugowania Motoroli
-        logger.info(f"🔍 FULL USER-AGENT: {user_agent}")
-        logger.info(f"📊 PARAMS: W={width}, H={height}, DPR={dpr}, RAM={ram}, Hz={refresh_rate}, GPU={gpu[:50]}")
+        logger.info(f"đź”Ť FULL USER-AGENT: {user_agent}")
+        logger.info(f"đź“Š PARAMS: W={width}, H={height}, DPR={dpr}, RAM={ram}, Hz={refresh_rate}, GPU={gpu[:50]}")
 
         ua_id = parse_device_from_ua(user_agent)
 
-        logger.info(f"🔍 PARSED UA_ID: {ua_id}")
+        logger.info(f"đź”Ť PARSED UA_ID: {ua_id}")
 
         detection_log = {
             "ua_detected": ua_id,
@@ -557,17 +557,17 @@ def check_brain():
             "cores": cores
         }
 
-        # Priorytet 1: User-Agent z dokładnym dopasowaniem w EXTERNAL_DB
+        # Priorytet 1: User-Agent z dokĹ‚adnym dopasowaniem w EXTERNAL_DB
         if ua_id:
             model_name = EXTERNAL_DB.get(ua_id) or STATIC_IDENTIFIERS.get(ua_id) or ANDROID_IDENTIFIERS.get(ua_id)
             if model_name:
-                logger.info(f"✅ Device identified via UA_EXACT: {model_name}")
+                logger.info(f"âś… Device identified via UA_EXACT: {model_name}")
                 accessory_codes = ACCESSORY_CODES.get(model_name, {"screen": "N/A", "case": "N/A"})
                 detection_log["method"] = "UA_EXACT"
                 detection_log["matched_id"] = ua_id
 
                 # Zapisz log sukcesu
-                if USE_MONGODB and detection_logs_collection:
+                if USE_MONGODB and detection_logs_collection is not None:
                     try:
                         detection_logs_collection.insert_one({
                             "timestamp": datetime.utcnow(),
@@ -592,13 +592,13 @@ def check_brain():
                     "detection_log": detection_log
                 })
 
-            # Priorytet 2: User-Agent wykryty, ale nie ma w bazie - zwróć surowy ID
-            logger.info(f"✅ Device identified via UA_RAW: {ua_id}")
+            # Priorytet 2: User-Agent wykryty, ale nie ma w bazie - zwrĂłÄ‡ surowy ID
+            logger.info(f"âś… Device identified via UA_RAW: {ua_id}")
             detection_log["method"] = "UA_RAW"
             detection_log["matched_id"] = ua_id
 
             # Zapisz log sukcesu
-            if USE_MONGODB and detection_logs_collection:
+            if USE_MONGODB and detection_logs_collection is not None:
                 try:
                     detection_logs_collection.insert_one({
                         "timestamp": datetime.utcnow(),
@@ -624,7 +624,7 @@ def check_brain():
             })
 
         # Priorytet 3: Baza AI (fingerprint) - NOWA SYGNATURA Z DPR I RAM
-        # Zaokrąglij DPR do 2 miejsc po przecinku (3.0000001192092896 → 3.0)
+        # ZaokrÄ…glij DPR do 2 miejsc po przecinku (3.0000001192092896 â†’ 3.0)
         dpr_rounded = round(float(dpr), 2)
         signature = f"{width}_{height}_{dpr_rounded}_{ram}_{refresh_rate}_{gpu}_{canvas_hash}"
 
@@ -633,14 +633,14 @@ def check_brain():
             top_model = max(models, key=models.get)
             total_count = sum(models.values())
             confidence = int((models[top_model] / total_count) * 100)
-            logger.info(f"✅ Device identified via AI: {top_model} ({confidence}% confidence)")
+            logger.info(f"âś… Device identified via AI: {top_model} ({confidence}% confidence)")
             accessory_codes = ACCESSORY_CODES.get(top_model, {"screen": "N/A", "case": "N/A"})
             detection_log["method"] = "AI_FINGERPRINT"
             detection_log["signature"] = signature
             detection_log["ai_models"] = dict(models)
 
             # Zapisz log sukcesu
-            if USE_MONGODB and detection_logs_collection:
+            if USE_MONGODB and detection_logs_collection is not None:
                 try:
                     detection_logs_collection.insert_one({
                         "timestamp": datetime.utcnow(),
@@ -665,29 +665,29 @@ def check_brain():
                 "detection_log": detection_log
             })
 
-        # Priorytet 4: Heurystyka - znajdź 3 najlepiej dopasowane modele z całej bazy
+        # Priorytet 4: Heurystyka - znajdĹş 3 najlepiej dopasowane modele z caĹ‚ej bazy
         suggestions = find_top_3_matches(width, height, refresh_rate, gpu, dpr, ram, cores)
 
         if suggestions:
             detection_log["method"] = "HEURISTIC_TOP3"
             detection_log["suggestions"] = suggestions
 
-            # AUTOMATYCZNA DECYZJA: Jeśli pierwszy model ma ≥90% a drugi <60%, uznaj automatycznie
+            # AUTOMATYCZNA DECYZJA: JeĹ›li pierwszy model ma â‰Ą90% a drugi <60%, uznaj automatycznie
             if len(suggestions) >= 1:
                 top_confidence = suggestions[0]["confidence"]
                 second_confidence = suggestions[1]["confidence"] if len(suggestions) >= 2 else 0
 
                 if top_confidence >= 90 and second_confidence < 60:
-                    # Automatyczna decyzja - pewność wystarczająco wysoka
+                    # Automatyczna decyzja - pewnoĹ›Ä‡ wystarczajÄ…co wysoka
                     model_name = suggestions[0]["model"]
-                    # Usuń "(symulacja?)" z nazwy przy szukaniu kodów akcesoriów
+                    # UsuĹ„ "(symulacja?)" z nazwy przy szukaniu kodĂłw akcesoriĂłw
                     clean_model_name = model_name.replace(" (symulacja?)", "")
                     accessory_codes = ACCESSORY_CODES.get(clean_model_name, {"screen": "N/A", "case": "N/A"})
 
-                    logger.info(f"✅ AUTO-DECISION: {model_name} ({top_confidence}% vs {second_confidence}%)")
+                    logger.info(f"âś… AUTO-DECISION: {model_name} ({top_confidence}% vs {second_confidence}%)")
 
                     # Zapisz log sukcesu
-                    if USE_MONGODB and detection_logs_collection:
+                    if USE_MONGODB and detection_logs_collection is not None:
                         try:
                             detection_logs_collection.insert_one({
                                 "timestamp": datetime.utcnow(),
@@ -712,11 +712,11 @@ def check_brain():
                         "auto_decision": True
                     })
 
-            # Brak automatycznej decyzji - pokaż sugestie
+            # Brak automatycznej decyzji - pokaĹĽ sugestie
             logger.info(f"Device not found - suggesting top 3 matches")
 
-            # Zapisz log porażki
-            if USE_MONGODB and detection_logs_collection:
+            # Zapisz log poraĹĽki
+            if USE_MONGODB and detection_logs_collection is not None:
                 try:
                     detection_logs_collection.insert_one({
                         "timestamp": datetime.utcnow(),
@@ -741,8 +741,8 @@ def check_brain():
         logger.info("Device not found in brain")
         detection_log["method"] = "NOT_FOUND"
 
-        # Zapisz log porażki (brak sugestii)
-        if USE_MONGODB and detection_logs_collection:
+        # Zapisz log poraĹĽki (brak sugestii)
+        if USE_MONGODB and detection_logs_collection is not None:
             try:
                 detection_logs_collection.insert_one({
                     "timestamp": datetime.utcnow(),
@@ -801,7 +801,7 @@ def learn():
         if not isinstance(cores, (int, float)) or cores < -1 or cores > 100:
             return jsonify({"error": "Invalid cores value"}), 400
 
-        # Zaokrąglij DPR do 2 miejsc po przecinku (musi być identyczne jak w check_brain!)
+        # ZaokrÄ…glij DPR do 2 miejsc po przecinku (musi byÄ‡ identyczne jak w check_brain!)
         dpr_rounded = round(float(dpr), 2)
         signature = f"{width}_{height}_{dpr_rounded}_{ram}_{refresh_rate}_{gpu}_{canvas_hash}"
 
@@ -837,12 +837,12 @@ def learn():
         return jsonify({"error": "Internal server error"}), 500
 
 # ============================================================================
-# PANEL ADMINISTRACYJNY - Zarządzanie Bazą Danych
+# PANEL ADMINISTRACYJNY - ZarzÄ…dzanie BazÄ… Danych
 # ============================================================================
 
 @app.route('/admin')
 def admin_panel():
-    """Panel administracyjny do zarządzania bazą AI Brain i kodami akcesoriów."""
+    """Panel administracyjny do zarzÄ…dzania bazÄ… AI Brain i kodami akcesoriĂłw."""
     return render_template('admin.html')
 
 @app.route('/admin/api/brain')
@@ -866,13 +866,13 @@ def admin_get_brain():
 
 @app.route('/admin/api/brain/clear', methods=['POST'])
 def admin_clear_brain():
-    """API: Wyczyść całą bazę AI Brain."""
+    """API: WyczyĹ›Ä‡ caĹ‚Ä… bazÄ™ AI Brain."""
     try:
         global BRAIN
         BRAIN = {}
         save_brain()
-        logger.warning("⚠️ ADMIN: Brain database cleared!")
-        return jsonify({"status": "OK", "message": "✅ Baza AI wyczyszczona!"})
+        logger.warning("âš ď¸Ź ADMIN: Brain database cleared!")
+        return jsonify({"status": "OK", "message": "âś… Baza AI wyczyszczona!"})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -885,7 +885,7 @@ def admin_import_matomo_models():
 
         MATOMO_URL = "https://raw.githubusercontent.com/matomo-org/device-detector/master/regexes/device/mobiles.yml"
 
-        logger.info("📥 Pobieranie danych z Matomo...")
+        logger.info("đź“Ą Pobieranie danych z Matomo...")
         response = requests.get(MATOMO_URL, timeout=30)
         response.raise_for_status()
         devices_data = yaml.safe_load(response.text)
@@ -894,7 +894,7 @@ def admin_import_matomo_models():
         new_models = 0
         updated_models = 0
 
-        # Matomo YAML ma strukturę: {brand_name: {models: [...], device: ..., regex: ...}}
+        # Matomo YAML ma strukturÄ™: {brand_name: {models: [...], device: ..., regex: ...}}
         for brand, brand_info in devices_data.items():
             if not isinstance(brand_info, dict):
                 continue
@@ -925,7 +925,7 @@ def admin_import_matomo_models():
 
                 full_name = f"{brand} {model_name}" if brand.lower() not in model_name.lower() else model_name
 
-                # Unikaj duplikatów - jeśli klucz już istnieje, dodaj suffix
+                # Unikaj duplikatĂłw - jeĹ›li klucz juĹĽ istnieje, dodaj suffix
                 original_device_id = device_id
                 counter = 1
                 while device_id in EXTERNAL_DB and EXTERNAL_DB[device_id] != full_name:
@@ -939,41 +939,41 @@ def admin_import_matomo_models():
                     EXTERNAL_DB[device_id] = full_name
                     updated_models += 1
 
-        # KLUCZOWE: Zapisz do MongoDB (trwałe na Render)
-        if USE_MONGODB and external_db_collection:
+        # KLUCZOWE: Zapisz do MongoDB (trwaĹ‚e na Render)
+        if USE_MONGODB and external_db_collection is not None:
             try:
                 external_db_collection.update_one(
                     {'_id': 'external_db'},
                     {'$set': {'data': EXTERNAL_DB, 'updated_at': datetime.utcnow()}},
                     upsert=True
                 )
-                logger.info(f"✅ Saved {len(EXTERNAL_DB)} models to MongoDB!")
+                logger.info(f"âś… Saved {len(EXTERNAL_DB)} models to MongoDB!")
             except Exception as e:
-                logger.error(f"❌ Failed to save models to MongoDB: {e}")
+                logger.error(f"âťŚ Failed to save models to MongoDB: {e}")
 
         # Zapisz do pliku JSON (backup lokalny - ulotny na Render)
         external_db_file = 'shark_external_db.json'
         with open(external_db_file, 'w', encoding='utf-8') as f:
             json.dump(EXTERNAL_DB, f, indent=2, ensure_ascii=False)
 
-        logger.warning(f"⚠️ ADMIN: Matomo imported! New: {new_models}, Updated: {updated_models}")
-        logger.info(f"💾 Saved to MongoDB and {external_db_file}")
+        logger.warning(f"âš ď¸Ź ADMIN: Matomo imported! New: {new_models}, Updated: {updated_models}")
+        logger.info(f"đź’ľ Saved to MongoDB and {external_db_file}")
 
         return jsonify({
             "status": "OK",
-            "message": f"✅ Zaimportowano modele z Matomo!",
+            "message": f"âś… Zaimportowano modele z Matomo!",
             "new_models": new_models,
             "updated_models": updated_models,
             "total_models": len(EXTERNAL_DB)
         })
 
     except Exception as e:
-        logger.error(f"❌ Błąd importu Matomo: {e}")
+        logger.error(f"âťŚ BĹ‚Ä…d importu Matomo: {e}")
         return jsonify({"error": str(e)}), 500
 
 @app.route('/admin/api/models/export')
 def admin_export_models():
-    """API: Eksportuj bazę EXTERNAL_DB do JSON."""
+    """API: Eksportuj bazÄ™ EXTERNAL_DB do JSON."""
     try:
         return jsonify({
             "status": "OK",
@@ -987,7 +987,7 @@ def admin_export_models():
 def admin_get_verified_models():
     """API: Pobierz wszystkie zweryfikowane modele."""
     try:
-        if USE_MONGODB and verified_models_collection:
+        if USE_MONGODB and verified_models_collection is not None:
             models = list(verified_models_collection.find({}, {'_id': 0}))
             return jsonify({"status": "OK", "models": models, "count": len(models)})
         else:
@@ -1007,8 +1007,8 @@ def admin_add_verified_model():
             if field not in data:
                 return jsonify({"status": "ERROR", "error": f"Missing field: {field}"}), 400
 
-        if USE_MONGODB and verified_models_collection:
-            # Sprawdź czy model już istnieje
+        if USE_MONGODB and verified_models_collection is not None:
+            # SprawdĹş czy model juĹĽ istnieje
             existing = verified_models_collection.find_one({'system_name': data['system_name']})
             if existing:
                 return jsonify({"status": "ERROR", "error": "Model already exists"}), 400
@@ -1028,7 +1028,7 @@ def admin_update_verified_model(system_name):
     try:
         data = request.json
 
-        if USE_MONGODB and verified_models_collection:
+        if USE_MONGODB and verified_models_collection is not None:
             result = verified_models_collection.update_one(
                 {'system_name': system_name},
                 {'$set': data}
@@ -1047,9 +1047,9 @@ def admin_update_verified_model(system_name):
 
 @app.route('/admin/api/verified-models/<system_name>', methods=['DELETE'])
 def admin_delete_verified_model(system_name):
-    """API: Usuń zweryfikowany model."""
+    """API: UsuĹ„ zweryfikowany model."""
     try:
-        if USE_MONGODB and verified_models_collection:
+        if USE_MONGODB and verified_models_collection is not None:
             result = verified_models_collection.delete_one({'system_name': system_name})
 
             if result.deleted_count > 0:
@@ -1065,10 +1065,10 @@ def admin_delete_verified_model(system_name):
 
 @app.route('/admin/api/detection-logs', methods=['GET'])
 def admin_get_detection_logs():
-    """API: Pobierz logi rozpoznań (sukces i porażka)."""
+    """API: Pobierz logi rozpoznaĹ„ (sukces i poraĹĽka)."""
     try:
-        if USE_MONGODB and detection_logs_collection:
-            # Pobierz ostatnie 100 logów
+        if USE_MONGODB and detection_logs_collection is not None:
+            # Pobierz ostatnie 100 logĂłw
             logs = list(detection_logs_collection.find({}, {'_id': 0}).sort('timestamp', -1).limit(100))
 
             # Statystyki
@@ -1094,12 +1094,12 @@ def admin_get_detection_logs():
 
 @app.route('/admin/api/detection-logs/clear', methods=['POST'])
 def admin_clear_detection_logs():
-    """API: Wyczyść logi rozpoznań."""
+    """API: WyczyĹ›Ä‡ logi rozpoznaĹ„."""
     try:
-        if USE_MONGODB and detection_logs_collection:
+        if USE_MONGODB and detection_logs_collection is not None:
             result = detection_logs_collection.delete_many({})
-            logger.warning(f"⚠️ ADMIN: Detection logs cleared! Deleted {result.deleted_count} logs")
-            return jsonify({"status": "OK", "message": f"✅ Usunięto {result.deleted_count} logów!"})
+            logger.warning(f"âš ď¸Ź ADMIN: Detection logs cleared! Deleted {result.deleted_count} logs")
+            return jsonify({"status": "OK", "message": f"âś… UsuniÄ™to {result.deleted_count} logĂłw!"})
         else:
             return jsonify({"status": "ERROR", "error": "MongoDB not available"}), 500
     except Exception as e:
@@ -1111,11 +1111,11 @@ def admin_sync_to_mongodb():
     """API: Synchronizuj wszystkie dane do MongoDB."""
     try:
         if not USE_MONGODB:
-            error_msg = "MongoDB nie jest dostępne. Ustaw zmienne środowiskowe MONGODB_URI i MONGODB_DB."
+            error_msg = "MongoDB nie jest dostÄ™pne. Ustaw zmienne Ĺ›rodowiskowe MONGODB_URI i MONGODB_DB."
             return jsonify({
                 "status": "ERROR",
                 "error": error_msg,
-                "help": "Lokalnie: ustaw zmienne w pliku .env lub systemowo. Na Render: zmienne są już ustawione."
+                "help": "Lokalnie: ustaw zmienne w pliku .env lub systemowo. Na Render: zmienne sÄ… juĹĽ ustawione."
             }), 500
 
         results = {}
@@ -1128,7 +1128,7 @@ def admin_sync_to_mongodb():
                 upsert=True
             )
             results['static_identifiers'] = len(STATIC_IDENTIFIERS)
-            logger.info(f"✅ Static Identifiers synced: {len(STATIC_IDENTIFIERS)} models")
+            logger.info(f"âś… Static Identifiers synced: {len(STATIC_IDENTIFIERS)} models")
         except Exception as e:
             results['static_identifiers'] = f"ERROR: {e}"
 
@@ -1140,7 +1140,7 @@ def admin_sync_to_mongodb():
                 upsert=True
             )
             results['android_identifiers'] = len(ANDROID_IDENTIFIERS)
-            logger.info(f"✅ Android Identifiers synced: {len(ANDROID_IDENTIFIERS)} models")
+            logger.info(f"âś… Android Identifiers synced: {len(ANDROID_IDENTIFIERS)} models")
         except Exception as e:
             results['android_identifiers'] = f"ERROR: {e}"
 
@@ -1152,7 +1152,7 @@ def admin_sync_to_mongodb():
                 upsert=True
             )
             results['accessory_codes'] = len(ACCESSORY_CODES)
-            logger.info(f"✅ Accessory Codes synced: {len(ACCESSORY_CODES)} models")
+            logger.info(f"âś… Accessory Codes synced: {len(ACCESSORY_CODES)} models")
         except Exception as e:
             results['accessory_codes'] = f"ERROR: {e}"
 
@@ -1164,11 +1164,11 @@ def admin_sync_to_mongodb():
                 upsert=True
             )
             results['external_db'] = len(EXTERNAL_DB)
-            logger.info(f"✅ External DB synced: {len(EXTERNAL_DB)} models")
+            logger.info(f"âś… External DB synced: {len(EXTERNAL_DB)} models")
         except Exception as e:
             results['external_db'] = f"ERROR: {e}"
 
-        # 5. Synchronizuj BRAIN (już istnieje, ale dla pewności)
+        # 5. Synchronizuj BRAIN (juĹĽ istnieje, ale dla pewnoĹ›ci)
         try:
             brain_collection.update_one(
                 {'_id': 'brain_v18'},
@@ -1176,14 +1176,14 @@ def admin_sync_to_mongodb():
                 upsert=True
             )
             results['brain'] = len(BRAIN)
-            logger.info(f"✅ Brain synced: {len(BRAIN)} signatures")
+            logger.info(f"âś… Brain synced: {len(BRAIN)} signatures")
         except Exception as e:
             results['brain'] = f"ERROR: {e}"
 
-        logger.warning(f"🔄 ADMIN: All data synced to MongoDB!")
+        logger.warning(f"đź”„ ADMIN: All data synced to MongoDB!")
         return jsonify({
             "status": "OK",
-            "message": "✅ Wszystkie dane zsynchronizowane do MongoDB!",
+            "message": "âś… Wszystkie dane zsynchronizowane do MongoDB!",
             "results": results
         })
 
@@ -1199,7 +1199,7 @@ if __name__ == '__main__':
     print(f"\n{'='*60}")
     print(f"SHARK v18 CLOUD | Port: {port}")
     print(f"Brain signatures: {len(BRAIN)}")
-    print(f"Storage: {'MongoDB ✅' if USE_MONGODB else 'JSON File 📁'}")
+    print(f"Storage: {'MongoDB âś…' if USE_MONGODB else 'JSON File đź“'}")
     print(f"Max signatures: {MAX_BRAIN_SIGNATURES}")
     print(f"{'='*60}\n")
 
@@ -1209,3 +1209,4 @@ if __name__ == '__main__':
         debug=False,
         threaded=True
     )
+
