@@ -935,13 +935,25 @@ def admin_import_matomo_models():
                     EXTERNAL_DB[device_id] = full_name
                     updated_models += 1
 
-        # Zapisz do pliku JSON, żeby przetrwało restart
+        # KLUCZOWE: Zapisz do MongoDB (trwałe na Render)
+        if USE_MONGODB and external_db_collection:
+            try:
+                external_db_collection.update_one(
+                    {'_id': 'external_db'},
+                    {'$set': {'data': EXTERNAL_DB, 'updated_at': datetime.utcnow()}},
+                    upsert=True
+                )
+                logger.info(f"✅ Saved {len(EXTERNAL_DB)} models to MongoDB!")
+            except Exception as e:
+                logger.error(f"❌ Failed to save models to MongoDB: {e}")
+
+        # Zapisz do pliku JSON (backup lokalny - ulotny na Render)
         external_db_file = 'shark_external_db.json'
         with open(external_db_file, 'w', encoding='utf-8') as f:
             json.dump(EXTERNAL_DB, f, indent=2, ensure_ascii=False)
 
         logger.warning(f"⚠️ ADMIN: Matomo imported! New: {new_models}, Updated: {updated_models}")
-        logger.info(f"💾 Saved to {external_db_file}")
+        logger.info(f"💾 Saved to MongoDB and {external_db_file}")
 
         return jsonify({
             "status": "OK",
