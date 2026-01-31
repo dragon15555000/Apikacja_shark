@@ -352,7 +352,12 @@ def find_top_3_matches(width, height, refresh_rate, gpu, dpr, ram, cores):
     # OS Segmentation - wykryj iOS vs Android
     is_ios = "apple" in gpu_lower or ram == -1
 
+    # Wykryj symulację/emulację (GPU komputera zamiast telefonu)
+    is_simulation = any(keyword in gpu_lower for keyword in ["intel", "nvidia", "amd", "angle", "swiftshader", "mesa"])
+
     logger.info(f"🔍 Weighted Scoring - OS: {'iOS' if is_ios else 'Android'}, DPR: {dpr}, RAM: {ram}, GPU: {gpu}")
+    if is_simulation:
+        logger.warning(f"⚠️ SYMULACJA WYKRYTA! GPU komputera: {gpu[:50]}")
 
     for model_name, specs in HEURISTIC_DB.items():
         score = 0
@@ -416,11 +421,25 @@ def find_top_3_matches(width, height, refresh_rate, gpu, dpr, ram, cores):
                 reasons.append(f"RAM: ~{specs['ram']}GB")
 
         if score > 0:
-            matches.append({
-                "model": model_name,
-                "confidence": min(score, 100),
-                "reasons": reasons
-            })
+            # Jeśli wykryto symulację, dodaj flagę
+            if is_simulation and score >= 100:
+                # Idealny match ale GPU komputera = prawdopodobnie symulacja
+                matches.append({
+                    "model": model_name + " (symulacja?)",
+                    "confidence": min(score, 100),
+                    "reasons": reasons + ["⚠️ GPU komputera wykryty"],
+                    "raw_score": score,
+                    "is_simulation": True
+                })
+            else:
+                # Normalne rozpoznanie
+                matches.append({
+                    "model": model_name,
+                    "confidence": min(score, 100),
+                    "reasons": reasons,
+                    "raw_score": score,
+                    "is_simulation": False
+                })
 
     # Sortuj po confidence i zwróć top 3
     matches.sort(key=lambda x: x["confidence"], reverse=True)
