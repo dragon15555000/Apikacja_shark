@@ -10,12 +10,26 @@ SHARK v18 teraz automatycznie importuje **14,000+ modeli telefonów** z Matomo D
 
 ### Krok 1: Uruchom Skrypt Setup
 
+Uruchom skrypt `setup_database.py` w terminalu:
 ```powershell
-cd C:\temo\install_shark\SHARK_v18_RELEASE
 python setup_database.py
 ```
 
-### Krok 2: Poczekaj na Import
+### Krok 2: Zdecyduj o Aktualizacji
+
+Jeśli baza `shark_external_db.json` już istnieje, skrypt zapyta, czy chcesz wymusić jej aktualizację z sieci.
+
+```
+📁 Baza danych już istnieje: shark_external_db.json
+❓ Czy chcesz wymusić aktualizację z sieci (zalecane raz na jakiś czas)? (t/n):
+```
+
+-   Wpisz **`t` (tak)**, aby pobrać najnowszą listę modeli z internetu. Spowoduje to nadpisanie lokalnej pamięci podręcznej.
+-   Wpisz **`n` (nie)**, aby pominąć aktualizację i zachować obecną wersję bazy.
+
+Jeśli uruchamiasz skrypt po raz pierwszy, import rozpocznie się automatycznie.
+
+### Krok 3: Poczekaj na Import
 
 ```
 ============================================================
@@ -98,20 +112,51 @@ Baza zostanie zapisana do pliku `shark_external_db.json` i przetrwa restart apli
   "CPH2581": "OnePlus 12",
   "2311DRK48C": "Xiaomi 14 Pro",
   "Pixel 8 Pro": "Google Pixel 8 Pro"
-}
-```
+}```
 
 ---
 
-## 🔧 Jak To Działa?
+## 🔧 Rozszerzanie Bazy o Własne Modele (`custom_models.json`)
+
+SHARK v18 pozwala na łatwe dodawanie własnych modeli telefonów, które nie znajdują się w głównej bazie Matomo, lub do nadpisywania istniejących wpisów. Służy do tego plik `custom_models.json`.
+
+### Jak to działa?
+
+1.  **Utwórz plik `custom_models.json`** w głównym folderze aplikacji.
+2.  **Dodaj swoje modele** w formacie JSON, używając struktury `{"iphone_models": {...}, "android_models": {...}}`.
+3.  Uruchom skrypt `python setup_database.py`.
+
+Skrypt najpierw wczyta Twoje modele z `custom_models.json`, a następnie uzupełni je o dane z Matomo. **Wpisy z `custom_models.json` mają priorytet** - jeśli model o tym samym ID istnieje w obu źródłach, wersja z Twojego pliku zostanie zachowana.
+
+### Przykład `custom_models.json`
+
+```json
+{
+  "iphone_models": {
+    "iPhone99,1": "iPhone Ultra Pro (Model Specjalny)"
+  },
+  "android_models": {
+    "SM-X999": "Samsung Galaxy Experimental",
+    "Pixel 10 Pro": "Google Pixel 10 Pro (wersja deweloperska)"
+  }
+}
+```
+
+Dzięki temu możesz na bieżąco rozszerzać bazę o najnowsze lub niestandardowe urządzenia.
+
+---
+
+## ⚙️ Jak To Działa?
 
 ### 1. Skrypt `setup_database.py`
 
-- Pobiera dane z GitHub: `matomo-org/device-detector`
-- Parsuje plik YAML: `regexes/device/mobiles.yml`
-- Wyciąga ID urządzeń z wyrażeń regularnych
-- Mapuje ID → pełna nazwa modelu
-- Zapisuje do `shark_external_db.json`
+Proces importu został znacznie ulepszony:
+
+1.  **Wczytanie modeli niestandardowych**: Skrypt najpierw szuka pliku `custom_models.json` i wczytuje z niego zdefiniowane przez użytkownika modele. Mają one najwyższy priorytet.
+2.  **Pobieranie danych z Matomo (z Cache)**: Skrypt pobiera główną listę modeli z `matomo-org/device-detector` na GitHub. Aby przyspieszyć kolejne uruchomienia, plik `mobiles.yml` jest zapisywany lokalnie jako pamięć podręczna. Przy następnym uruchomieniu, zamiast pobierać dane z sieci, skrypt użyje lokalnej kopii, chyba że użytkownik wymusi aktualizację.
+3.  **Inteligentne Parsowanie**: Skrypt parsuje plik YAML i używa ulepszonej logiki (wyrażeń regularnych) do niezawodnego wyciągania identyfikatorów urządzeń.
+4.  **Łączenie Danych**: Dane z Matomo są łączone z modelami niestandardowymi. Jeśli wystąpi konflikt ID, model z `custom_models.json` jest zachowywany.
+5.  **Zapis do Bazy Danych**: Połączona i zaktualizowana lista jest zapisywana do pliku `shark_external_db.json`.
 
 ### 2. Aplikacja `shark_v18_cloud.py`
 
@@ -146,7 +191,8 @@ System używa 3-poziomowej hierarchii:
 ```
 SHARK_v18_RELEASE/
 ├── shark_v18_cloud.py          # Główna aplikacja
-├── setup_database.py           # Skrypt importu (NOWY!)
+├── setup_database.py           # Skrypt importu
+├── custom_models.json          # Baza modeli niestandardowych (opcjonalny)
 ├── shark_external_db.json      # Baza modeli (generowany)
 ├── shark_brain_v18.json        # Baza AI (generowany)
 ├── requirements.txt            # Zależności
