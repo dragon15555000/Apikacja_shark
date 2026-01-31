@@ -1,0 +1,91 @@
+"""
+SHARK v18 - Device Identifiers
+Słowniki identyfikatorów urządzeń i kodów akcesoriów
+"""
+
+# Identyfikatory iPhone (z User-Agent)
+STATIC_IDENTIFIERS = {
+    "iPhone18,1": "iPhone 17 Pro", "iPhone18,2": "iPhone 17 Pro Max",
+    "iPhone18,3": "iPhone 17", "iPhone18,4": "iPhone Air",
+    "iPhone17,1": "iPhone 16 Pro", "iPhone17,2": "iPhone 16 Pro Max",
+    "iPhone17,3": "iPhone 16", "iPhone17,4": "iPhone 16 Plus", "iPhone17,5": "iPhone 16e",
+    "iPhone16,1": "iPhone 15 Pro", "iPhone16,2": "iPhone 15 Pro Max",
+    "iPhone15,4": "iPhone 15", "iPhone15,5": "iPhone 15 Plus",
+    "iPhone15,2": "iPhone 14 Pro", "iPhone15,3": "iPhone 14 Pro Max",
+    "iPhone14,7": "iPhone 14", "iPhone14,8": "iPhone 14 Plus",
+    "iPhone14,5": "iPhone 13", "iPhone14,2": "iPhone 13 Pro", "iPhone14,3": "iPhone 13 Pro Max",
+    "iPhone13,2": "iPhone 12", "iPhone13,3": "iPhone 12 Pro", "iPhone13,4": "iPhone 12 Pro Max",
+    "iPhone12,1": "iPhone 11", "iPhone12,3": "iPhone 11 Pro", "iPhone12,5": "iPhone 11 Pro Max"
+}
+
+# Identyfikatory Android (z User-Agent lub Build Model)
+ANDROID_IDENTIFIERS = {
+    "SM-S928": "Samsung Galaxy S24 Ultra", "SM-S926": "Samsung Galaxy S24+", "SM-S921": "Samsung Galaxy S24",
+    "SM-S918": "Samsung Galaxy S23 Ultra", "SM-S916": "Samsung Galaxy S23+", "SM-S911": "Samsung Galaxy S23",
+    "SM-S908": "Samsung Galaxy S22 Ultra", "SM-S906": "Samsung Galaxy S22+", "SM-S901": "Samsung Galaxy S22",
+    "SM-G998": "Samsung Galaxy S21 Ultra", "SM-G996": "Samsung Galaxy S21+", "SM-G991": "Samsung Galaxy S21",
+    "SM-G988": "Samsung Galaxy S20 Ultra", "SM-G986": "Samsung Galaxy S20+", "SM-G981": "Samsung Galaxy S20",
+    "SM-A546": "Samsung Galaxy A54", "SM-A536": "Samsung Galaxy A53", "SM-A526": "Samsung Galaxy A52",
+    "SM-A346": "Samsung Galaxy A34", "SM-A336": "Samsung Galaxy A33",
+    "SM-F946": "Samsung Galaxy Z Fold 5", "SM-F936": "Samsung Galaxy Z Fold 4", "SM-F926": "Samsung Galaxy Z Fold 3",
+    "SM-F741": "Samsung Galaxy Z Flip 5", "SM-F721": "Samsung Galaxy Z Flip 4", "SM-F711": "Samsung Galaxy Z Flip 3",
+    "Pixel 8 Pro": "Google Pixel 8 Pro", "Pixel 8": "Google Pixel 8",
+    "Pixel 7 Pro": "Google Pixel 7 Pro", "Pixel 7": "Google Pixel 7",
+    "Pixel 6 Pro": "Google Pixel 6 Pro", "Pixel 6": "Google Pixel 6", "Pixel 5": "Google Pixel 5",
+    "2311DRK48C": "Xiaomi 14 Pro", "23117PN0CC": "Xiaomi 14", "2304FPN6DC": "Xiaomi 13 Ultra",
+    "2211133C": "Xiaomi 13 Pro", "2211133G": "Xiaomi 13", "2206123SC": "Xiaomi 12 Pro",
+    "2201123G": "Xiaomi 12", "M2102K1G": "Xiaomi Mi 11", "M2007J20CG": "Xiaomi Mi 10T Pro",
+    "CPH2581": "OnePlus 12", "CPH2449": "OnePlus 11", "NE2213": "OnePlus 10 Pro",
+    "LE2123": "OnePlus 9 Pro", "LE2121": "OnePlus 9", "IN2023": "OnePlus 8 Pro", "IN2020": "OnePlus 8",
+    "ALN-L29": "Huawei P40 Pro", "ANA-NX9": "Huawei P40", "VOG-L29": "Huawei P30 Pro",
+    "ELE-L29": "Huawei P30", "MAR-LX1A": "Huawei P Smart 2019",
+}
+
+# Kody akcesoriów (ekrany i etui) dla każdego modelu
+ACCESSORY_CODES = {
+    "iPhone 17 Pro Max": {"screen": "A1U1", "case": "A1U2"}, "iPhone 17 Pro": {"screen": "A2U1", "case": "A2U2"},
+    "iPhone 17": {"screen": "A3U1", "case": "A3U2"}, "iPhone Air": {"screen": "A4U1", "case": "A4U2"},
+    "iPhone 16 Pro Max": {"screen": "B1U1", "case": "B1U2"}, "iPhone 16 Pro": {"screen": "B2U1", "case": "B2U2"},
+    "iPhone 16": {"screen": "B3U1", "case": "B3U2"}, "iPhone 16 Plus": {"screen": "B4U1", "case": "B4U2"},
+    "iPhone 16e": {"screen": "B5U1", "case": "B5U2"},
+    "iPhone 15 Pro Max": {"screen": "C1U1", "case": "C1U2"}, "iPhone 15 Pro": {"screen": "C2U1", "case": "C2U2"},
+    "iPhone 15": {"screen": "C3U1", "case": "C3U2"}, "iPhone 15 Plus": {"screen": "C4U1", "case": "C4U2"},
+    "iPhone 14 Pro Max": {"screen": "D1U1", "case": "D1U2"}, "iPhone 14 Pro": {"screen": "D2U1", "case": "D2U2"},
+    "iPhone 14": {"screen": "D3U1", "case": "D3U2"}, "iPhone 14 Plus": {"screen": "D4U1", "case": "D4U2"},
+    "iPhone 13 Pro Max": {"screen": "E1U1", "case": "E1U2"}, "iPhone 13 Pro": {"screen": "E2U1", "case": "E2U2"},
+    "iPhone 13": {"screen": "E3U1", "case": "E3U2"},
+    "iPhone 12 Pro Max": {"screen": "F1U1", "case": "F1U2"}, "iPhone 12 Pro": {"screen": "F2U1", "case": "F2U2"},
+    "iPhone 12": {"screen": "F3U1", "case": "F3U2"},
+    "iPhone 11 Pro Max": {"screen": "G1U1", "case": "G1U2"}, "iPhone 11 Pro": {"screen": "G2U1", "case": "G2U2"},
+    "iPhone 11": {"screen": "G3U1", "case": "G3U2"},
+    "Samsung Galaxy S24 Ultra": {"screen": "SA1U1", "case": "SA1U2"}, "Samsung Galaxy S24+": {"screen": "SA2U1", "case": "SA2U2"},
+    "Samsung Galaxy S24": {"screen": "SA3U1", "case": "SA3U2"}, "Samsung Galaxy S23 Ultra": {"screen": "SB1U1", "case": "SB1U2"},
+    "Samsung Galaxy S23+": {"screen": "SB2U1", "case": "SB2U2"}, "Samsung Galaxy S23": {"screen": "SB3U1", "case": "SB3U2"},
+    "Samsung Galaxy S22 Ultra": {"screen": "SC1U1", "case": "SC1U2"}, "Samsung Galaxy S22+": {"screen": "SC2U1", "case": "SC2U2"},
+    "Samsung Galaxy S22": {"screen": "SC3U1", "case": "SC3U2"}, "Samsung Galaxy S21 Ultra": {"screen": "SD1U1", "case": "SD1U2"},
+    "Samsung Galaxy S21+": {"screen": "SD2U1", "case": "SD2U2"}, "Samsung Galaxy S21": {"screen": "SD3U1", "case": "SD3U2"},
+    "Samsung Galaxy S20 Ultra": {"screen": "SE1U1", "case": "SE1U2"}, "Samsung Galaxy S20+": {"screen": "SE2U1", "case": "SE2U2"},
+    "Samsung Galaxy S20": {"screen": "SE3U1", "case": "SE3U2"},
+    "Samsung Galaxy A54": {"screen": "AA1U1", "case": "AA1U2"}, "Samsung Galaxy A53": {"screen": "AA2U1", "case": "AA2U2"},
+    "Samsung Galaxy A52": {"screen": "AA3U1", "case": "AA3U2"}, "Samsung Galaxy A34": {"screen": "AA4U1", "case": "AA4U2"},
+    "Samsung Galaxy A33": {"screen": "AA5U1", "case": "AA5U2"},
+    "Samsung Galaxy Z Fold 5": {"screen": "ZF1U1", "case": "ZF1U2"}, "Samsung Galaxy Z Fold 4": {"screen": "ZF2U1", "case": "ZF2U2"},
+    "Samsung Galaxy Z Fold 3": {"screen": "ZF3U1", "case": "ZF3U2"}, "Samsung Galaxy Z Flip 5": {"screen": "ZP1U1", "case": "ZP1U2"},
+    "Samsung Galaxy Z Flip 4": {"screen": "ZP2U1", "case": "ZP2U2"}, "Samsung Galaxy Z Flip 3": {"screen": "ZP3U1", "case": "ZP3U2"},
+    "Google Pixel 8 Pro": {"screen": "GP1U1", "case": "GP1U2"}, "Google Pixel 8": {"screen": "GP2U1", "case": "GP2U2"},
+    "Google Pixel 7 Pro": {"screen": "GP3U1", "case": "GP3U2"}, "Google Pixel 7": {"screen": "GP4U1", "case": "GP4U2"},
+    "Google Pixel 6 Pro": {"screen": "GP5U1", "case": "GP5U2"}, "Google Pixel 6": {"screen": "GP6U1", "case": "GP6U2"},
+    "Google Pixel 5": {"screen": "GP7U1", "case": "GP7U2"},
+    "Xiaomi 14 Pro": {"screen": "XM1U1", "case": "XM1U2"}, "Xiaomi 14": {"screen": "XM2U1", "case": "XM2U2"},
+    "Xiaomi 13 Ultra": {"screen": "XM3U1", "case": "XM3U2"}, "Xiaomi 13 Pro": {"screen": "XM4U1", "case": "XM4U2"},
+    "Xiaomi 13": {"screen": "XM5U1", "case": "XM5U2"}, "Xiaomi 12 Pro": {"screen": "XM6U1", "case": "XM6U2"},
+    "Xiaomi 12": {"screen": "XM7U1", "case": "XM7U2"}, "Xiaomi Mi 11": {"screen": "XM8U1", "case": "XM8U2"},
+    "Xiaomi Mi 10T Pro": {"screen": "XM9U1", "case": "XM9U2"},
+    "OnePlus 12": {"screen": "OP1U1", "case": "OP1U2"}, "OnePlus 11": {"screen": "OP2U1", "case": "OP2U2"},
+    "OnePlus 10 Pro": {"screen": "OP3U1", "case": "OP3U2"}, "OnePlus 9 Pro": {"screen": "OP4U1", "case": "OP4U2"},
+    "OnePlus 9": {"screen": "OP5U1", "case": "OP5U2"}, "OnePlus 8 Pro": {"screen": "OP6U1", "case": "OP6U2"},
+    "OnePlus 8": {"screen": "OP7U1", "case": "OP7U2"},
+    "Huawei P40 Pro": {"screen": "HW1U1", "case": "HW1U2"}, "Huawei P40": {"screen": "HW2U1", "case": "HW2U2"},
+    "Huawei P30 Pro": {"screen": "HW3U1", "case": "HW3U2"}, "Huawei P30": {"screen": "HW4U1", "case": "HW4U2"},
+    "Huawei P Smart 2019": {"screen": "HW5U1", "case": "HW5U2"},
+}
