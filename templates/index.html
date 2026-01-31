@@ -91,12 +91,49 @@
         const btn=document.getElementById('scanBtn');btn.disabled=true;btn.innerText="...";document.getElementById('result-hero').style.display='block';
         const gc=document.createElement('canvas'),gl=gc.getContext('webgl'),di=gl?gl.getExtension('WEBGL_debug_renderer_info'):null;
         let gpu=di?gl.getParameter(di.UNMASKED_RENDERER_WEBGL):"unknown";if(gpu.includes("Apple"))gpu=gpu.replace("Apple ","").replace(" GPU","").trim();
-        const hz=await measureHz(),hash=getCanvasHash(),w=Math.min(screen.width,screen.height),h=Math.max(screen.width,screen.height);
-        const dpr=window.devicePixelRatio||1;
+
+        // ✅ PRECYZYJNE POMIARY VIEWPORT (getBoundingClientRect zamiast window.innerWidth)
+        const layoutWidth = document.documentElement.getBoundingClientRect().width;
+        const layoutHeight = window.innerHeight; // Dynamiczna wysokość (pasek adresu)
+
+        // Normalizacja: zaokrąglaj tylko jeśli bardzo blisko całkowitej (błąd renderowania <0.02px)
+        const w = Math.abs(layoutWidth - Math.round(layoutWidth)) < 0.02 ? Math.round(layoutWidth) : layoutWidth;
+        const h = layoutHeight; // Nie zaokrąglaj - porównuj z tolerancją po stronie serwera
+
+        // ✅ DPR z walidacją przez matchMedia
+        const dpr = window.devicePixelRatio || 1;
+        const dprVerified = window.matchMedia(`(min-resolution: ${dpr - 0.1}dppx)`).matches;
+
+        const hz=await measureHz(),hash=getCanvasHash();
         const ram=navigator.deviceMemory||-1;
         const cores=navigator.hardwareConcurrency||-1;
-        const data={w:w,h:h,hz:hz,gpu:gpu.toLowerCase(),canvasHash:hash,userAgent:navigator.userAgent,model:"",dpr:dpr,ram:ram,cores:cores};
+
+        // Dodatkowe flagi diagnostyczne
+        const isZoomed = dpr !== Math.round(dpr); // Flaga: czy DPR jest ułamkowe (Display Zoom?)
+
+        const data={
+            w:w,
+            h:h,
+            hz:hz,
+            gpu:gpu.toLowerCase(),
+            canvasHash:hash,
+            userAgent:navigator.userAgent,
+            model:"",
+            dpr:dpr,
+            dprVerified:dprVerified,
+            isZoomed:isZoomed,
+            ram:ram,
+            cores:cores
+        };
         currentScanData=data;
+
+        console.log("📐 Precyzyjne pomiary:", {
+            layoutWidth: layoutWidth,
+            normalizedW: w,
+            dpr: dpr,
+            dprVerified: dprVerified,
+            isZoomed: isZoomed
+        });
         document.getElementById('val-res').innerText=w + ' x ' + h;
         document.getElementById('val-dpr').innerText=dpr + 'x';
         document.getElementById('val-hz').innerText=hz + ' Hz';
