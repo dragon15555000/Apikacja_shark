@@ -1,4 +1,5 @@
-﻿import json
+﻿# SHARK v18.17 - MongoDB collection fix
+import json
 import logging
 import os
 import re
