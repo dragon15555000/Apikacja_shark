@@ -48,6 +48,17 @@ MONGODB_URI = os.environ.get('MONGODB_URI', None)
 MONGODB_DB = os.environ.get('MONGODB_DB', 'shark_db')
 USE_MONGODB = MONGODB_AVAILABLE and MONGODB_URI
 
+# Inicjalizacja kolekcji MongoDB (domyślnie None)
+db = None
+brain_collection = None
+logs_collection = None
+verified_models_collection = None
+detection_logs_collection = None
+external_db_collection = None
+static_identifiers_collection = None
+android_identifiers_collection = None
+accessory_codes_collection = None
+
 if USE_MONGODB:
     try:
         mongo_client = MongoClient(MONGODB_URI, serverSelectionTimeoutMS=5000)
@@ -66,26 +77,10 @@ if USE_MONGODB:
     except Exception as e:
         logger.error(f"❌ MongoDB connection failed: {e}")
         USE_MONGODB = False
-        db = None
-        brain_collection = None
-        logs_collection = None
-        verified_models_collection = None
-        detection_logs_collection = None
-        external_db_collection = None
-        static_identifiers_collection = None
-        android_identifiers_collection = None
-        accessory_codes_collection = None
+        # Kolekcje już są ustawione na None globalnie
 else:
-    db = None
-    brain_collection = None
-    logs_collection = None
-    verified_models_collection = None
-    detection_logs_collection = None
-    external_db_collection = None
-    static_identifiers_collection = None
-    android_identifiers_collection = None
-    accessory_codes_collection = None
     logger.info("📁 Using JSON file storage (no MongoDB)")
+    # Kolekcje już są ustawione na None globalnie
 
 # --- IDENTYFIKATORY URZĄDZEŃ ---
 STATIC_IDENTIFIERS = {
