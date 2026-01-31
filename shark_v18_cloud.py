@@ -1,4 +1,4 @@
-﻿# SHARK v18.17 - MongoDB collection fix
+﻿﻿# SHARK v18.17 - MongoDB collection fix
 import json
 import logging
 import os
@@ -168,6 +168,33 @@ ACCESSORY_CODES = {
     "Huawei P Smart 2019": {"screen": "HW5U1", "case": "HW5U2"},
 }
 
+# Baza heurystyczna - SPRAWDZONE PARAMETRY z rzeczywistych urzÄ…dzeĹ„
+HEURISTIC_DB = {
+    # iPhone - SPRAWDZONE (z JSON)
+    "iPhone 16 Pro Max": {"w": 440, "h": 956, "hz": 120, "gpu": "apple gpu", "dpr": 3.0, "ram": -1},
+    "iPhone 16 Pro": {"w": 402, "h": 874, "hz": 120, "gpu": "apple gpu", "dpr": 3.0, "ram": -1},
+    "iPhone 16": {"w": 393, "h": 852, "hz": 60, "gpu": "apple gpu", "dpr": 3.0, "ram": -1},
+    "iPhone 15 Pro Max": {"w": 430, "h": 932, "hz": 120, "gpu": "apple gpu", "dpr": 3.0, "ram": -1},
+    "iPhone 15 Pro": {"w": 393, "h": 852, "hz": 120, "gpu": "apple gpu", "dpr": 3.0, "ram": -1},
+    "iPhone 14 Pro": {"w": 393, "h": 852, "hz": 120, "gpu": "apple gpu", "dpr": 3.0, "ram": -1},
+    # Samsung - SPRAWDZONE (z JSON)
+    "Samsung Galaxy S24 Ultra": {"w": 384, "h": 824, "hz": 120, "gpu": "adreno 750", "dpr": 3.75, "ram": 8},
+    "Samsung Galaxy S24 Plus": {"w": 384, "h": 832, "hz": 120, "gpu": "adreno 750", "dpr": 3.75, "ram": 8},
+    "Samsung Galaxy S24": {"w": 360, "h": 780, "hz": 120, "gpu": "adreno 750", "dpr": 3.0, "ram": 8},
+    "Samsung Galaxy S23 Ultra": {"w": 384, "h": 824, "hz": 120, "gpu": "adreno 740", "dpr": 3.75, "ram": 8},
+    # Google Pixel - SPRAWDZONE (z JSON)
+    "Google Pixel 8 Pro": {"w": 448, "h": 998, "hz": 120, "gpu": "mali-g715", "dpr": 3.0, "ram": 8},
+    "Google Pixel 7 Pro": {"w": 412, "h": 892, "hz": 120, "gpu": "mali-g710", "dpr": 3.5, "ram": 8},
+    # Xiaomi - SPRAWDZONE (z JSON)
+    "Xiaomi 14 Pro": {"w": 412, "h": 915, "hz": 120, "gpu": "adreno 750", "dpr": 3.5, "ram": 8},
+    "Xiaomi 13 Ultra": {"w": 412, "h": 915, "hz": 120, "gpu": "adreno 740", "dpr": 3.5, "ram": 8},
+    # Motorola - dodatkowe modele
+    "Motorola Edge 50 Pro": {"w": 412, "h": 915, "hz": 144, "gpu": "adreno 735", "dpr": 2.625, "ram": 12},
+    "Motorola Edge 50": {"w": 412, "h": 915, "hz": 120, "gpu": "adreno 732", "dpr": 2.625, "ram": 8},
+    "Motorola Edge 40 Pro": {"w": 412, "h": 915, "hz": 165, "gpu": "adreno 740", "dpr": 2.625, "ram": 12},
+    "Motorola Moto G84": {"w": 412, "h": 915, "hz": 120, "gpu": "adreno 619", "dpr": 2.4, "ram": 8},
+}
+
 def load_data():
     """Load all data from MongoDB (priority) or JSON files (fallback)."""
     global BRAIN, EXTERNAL_DB, STATIC_IDENTIFIERS, ANDROID_IDENTIFIERS, ACCESSORY_CODES
@@ -331,33 +358,6 @@ def find_top_3_matches(width, height, refresh_rate, gpu, dpr, ram, cores):
     - Ustaw User Agent, DPR, viewport - moĹĽesz symulowaÄ‡ dowolny telefon
     - SprawdĹş logi w konsoli serwera, aby zobaczyÄ‡ szczegĂłĹ‚y punktacji
     """
-    # Baza heurystyczna - SPRAWDZONE PARAMETRY z rzeczywistych urzÄ…dzeĹ„
-    HEURISTIC_DB = {
-        # iPhone - SPRAWDZONE (z JSON)
-        "iPhone 16 Pro Max": {"w": 440, "h": 956, "hz": 120, "gpu": "apple gpu", "dpr": 3.0, "ram": -1},
-        "iPhone 16 Pro": {"w": 402, "h": 874, "hz": 120, "gpu": "apple gpu", "dpr": 3.0, "ram": -1},
-        "iPhone 16": {"w": 393, "h": 852, "hz": 60, "gpu": "apple gpu", "dpr": 3.0, "ram": -1},
-        "iPhone 15 Pro Max": {"w": 430, "h": 932, "hz": 120, "gpu": "apple gpu", "dpr": 3.0, "ram": -1},
-        "iPhone 15 Pro": {"w": 393, "h": 852, "hz": 120, "gpu": "apple gpu", "dpr": 3.0, "ram": -1},
-        "iPhone 14 Pro": {"w": 393, "h": 852, "hz": 120, "gpu": "apple gpu", "dpr": 3.0, "ram": -1},
-        # Samsung - SPRAWDZONE (z JSON)
-        "Samsung Galaxy S24 Ultra": {"w": 384, "h": 824, "hz": 120, "gpu": "adreno 750", "dpr": 3.75, "ram": 8},
-        "Samsung Galaxy S24 Plus": {"w": 384, "h": 832, "hz": 120, "gpu": "adreno 750", "dpr": 3.75, "ram": 8},
-        "Samsung Galaxy S24": {"w": 360, "h": 780, "hz": 120, "gpu": "adreno 750", "dpr": 3.0, "ram": 8},
-        "Samsung Galaxy S23 Ultra": {"w": 384, "h": 824, "hz": 120, "gpu": "adreno 740", "dpr": 3.75, "ram": 8},
-        # Google Pixel - SPRAWDZONE (z JSON)
-        "Google Pixel 8 Pro": {"w": 448, "h": 998, "hz": 120, "gpu": "mali-g715", "dpr": 3.0, "ram": 8},
-        "Google Pixel 7 Pro": {"w": 412, "h": 892, "hz": 120, "gpu": "mali-g710", "dpr": 3.5, "ram": 8},
-        # Xiaomi - SPRAWDZONE (z JSON)
-        "Xiaomi 14 Pro": {"w": 412, "h": 915, "hz": 120, "gpu": "adreno 750", "dpr": 3.5, "ram": 8},
-        "Xiaomi 13 Ultra": {"w": 412, "h": 915, "hz": 120, "gpu": "adreno 740", "dpr": 3.5, "ram": 8},
-        # Motorola - dodatkowe modele
-        "Motorola Edge 50 Pro": {"w": 412, "h": 915, "hz": 144, "gpu": "adreno 735", "dpr": 2.625, "ram": 12},
-        "Motorola Edge 50": {"w": 412, "h": 915, "hz": 120, "gpu": "adreno 732", "dpr": 2.625, "ram": 8},
-        "Motorola Edge 40 Pro": {"w": 412, "h": 915, "hz": 165, "gpu": "adreno 740", "dpr": 2.625, "ram": 12},
-        "Motorola Moto G84": {"w": 412, "h": 915, "hz": 120, "gpu": "adreno 619", "dpr": 2.4, "ram": 8},
-    }
-
     matches = []
     gpu_lower = gpu.lower()
 
@@ -1192,9 +1192,9 @@ def admin_sync_to_mongodb():
         logger.error(f"Error syncing to MongoDB: {e}")
         return jsonify({"status": "ERROR", "error": str(e)}), 500
 
-if __name__ == '__main__':
-    load_data()
+load_data()
 
+if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
 
     print(f"\n{'='*60}")
@@ -1210,4 +1210,3 @@ if __name__ == '__main__':
         debug=False,
         threaded=True
     )
-
