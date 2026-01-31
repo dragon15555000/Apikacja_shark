@@ -67,8 +67,24 @@ if USE_MONGODB:
         logger.error(f"❌ MongoDB connection failed: {e}")
         USE_MONGODB = False
         db = None
+        brain_collection = None
+        logs_collection = None
+        verified_models_collection = None
+        detection_logs_collection = None
+        external_db_collection = None
+        static_identifiers_collection = None
+        android_identifiers_collection = None
+        accessory_codes_collection = None
 else:
     db = None
+    brain_collection = None
+    logs_collection = None
+    verified_models_collection = None
+    detection_logs_collection = None
+    external_db_collection = None
+    static_identifiers_collection = None
+    android_identifiers_collection = None
+    accessory_codes_collection = None
     logger.info("📁 Using JSON file storage (no MongoDB)")
 
 # --- IDENTYFIKATORY URZĄDZEŃ ---
@@ -667,7 +683,9 @@ def check_brain():
                 if top_confidence >= 90 and second_confidence < 60:
                     # Automatyczna decyzja - pewność wystarczająco wysoka
                     model_name = suggestions[0]["model"]
-                    accessory_codes = ACCESSORY_CODES.get(model_name, {"screen": "N/A", "case": "N/A"})
+                    # Usuń "(symulacja?)" z nazwy przy szukaniu kodów akcesoriów
+                    clean_model_name = model_name.replace(" (symulacja?)", "")
+                    accessory_codes = ACCESSORY_CODES.get(clean_model_name, {"screen": "N/A", "case": "N/A"})
 
                     logger.info(f"✅ AUTO-DECISION: {model_name} ({top_confidence}% vs {second_confidence}%)")
 
