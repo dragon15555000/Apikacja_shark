@@ -8,7 +8,7 @@ from app.config import USE_MONGODB, BRAIN, EXTERNAL_DB, MAX_BRAIN_SIGNATURES, MA
 from app.models.identifiers import STATIC_IDENTIFIERS, ANDROID_IDENTIFIERS, ACCESSORY_CODES
 from app.utils.logic import parse_device_from_ua, find_top_3_matches
 from app.utils.validators import validate_json
-from app.database import detection_logs_collection, save_brain
+from app.database import detection_logs_collection, save_brain, save_brain_signature
 
 def register_api_routes(app, limiter):
     """Rejestruje główne endpointy API"""
@@ -313,6 +313,7 @@ def register_api_routes(app, limiter):
             dpr_rounded = round(float(dpr), 2)
             signature = f"{width}_{height}_{dpr_rounded}_{ram}_{refresh_rate}_{gpu}_{canvas_hash}"
 
+            # Pobierz aktualną sygnaturę z BRAIN (może być zaktualizowana przez inny worker)
             if signature not in BRAIN:
                 BRAIN[signature] = {}
 
@@ -331,9 +332,17 @@ def register_api_routes(app, limiter):
                 oldest_sig = next(iter(BRAIN))
                 del BRAIN[oldest_sig]
 
-            save_brain()
+            # ✅ ATOMICZNY ZAPIS - bezpieczny dla wielu workerów
+            # Zamiast save_brain() (nadpisuje cały BRAIN), używamy save_brain_signature()
+            # która atomicznie zapisuje tylko tę jedną sygnaturę
+            model_data = BRAIN[signature]
+            success = save_brain_signature(signature, model_data)
 
-            logger.info(f"✅ Brain learned: {model} for signature {signature[:50]}...")
+            if not success:
+                logger.error(f"❌ Failed to save brain signature: {signature[:50]}...")
+                return jsonify({"error": "Failed to save brain signature"}), 500
+
+            logger.info(f"✅ Brain learned: {model} for signature {signature[:50]}... (count: {BRAIN[signature][model]})")
 
             return jsonify({
                 "success": True,

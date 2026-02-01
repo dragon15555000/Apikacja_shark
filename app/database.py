@@ -160,7 +160,11 @@ def load_data():
             logger.info("💡 Run 'python setup_database.py' to import 1000+ models from Matomo")
 
 def save_brain():
-    """Save brain data to MongoDB or JSON file."""
+    """Save brain data to MongoDB or JSON file.
+
+    DEPRECATED: Use save_brain_signature() for atomic writes in multi-worker environments.
+    This function is kept for backward compatibility and full brain dumps.
+    """
     import app.config as config
 
     try:
@@ -179,6 +183,122 @@ def save_brain():
             logger.info(f"Brain saved to file: {len(config.BRAIN)} signatures")
     except Exception as e:
         logger.error(f"Error saving brain: {e}")
+
+def save_brain_signature(fingerprint, model_data):
+    """
+    Atomically save a single brain signature to MongoDB.
+
+    This function uses MongoDB's atomic $set operation to update a single signature
+    without race conditions. Safe for multi-worker environments (gunicorn -w N).
+
+    Args:
+        fingerprint (str): Unique fingerprint key
+        model_data (dict): Model data to save
+
+    Returns:
+        bool: True if successful, False otherwise
+
+    Example:
+        >>> save_brain_signature("w414h896dpr2.0hz60", {
+        ...     "model": "iPhone 11",
+        ...     "confidence": 95,
+        ...     "learned_at": "2026-02-01T12:00:00"
+        ... })
+    """
+    import app.config as config
+
+    try:
+        if USE_MONGODB:
+            # Atomiczne zapisanie pojedynczej sygnatury
+            # Używamy $set z kluczem data.{fingerprint} zamiast nadpisywać cały BRAIN
+            result = brain_collection.update_one(
+                {'_id': 'brain_v18'},
+                {
+                    '$set': {
+                        f'data.{fingerprint}': model_data,
+                        'updated_at': datetime.utcnow()
+                    }
+                },
+                upsert=True
+            )
+
+            # Zaktualizuj również lokalną kopię w pamięci
+            config.BRAIN[fingerprint] = model_data
+
+            logger.info(f"✅ Brain signature saved atomically: {fingerprint} -> {model_data.get('model', 'Unknown')}")
+            return True
+        else:
+            # Fallback do JSON - używamy blokady pliku
+            # Windows: msvcrt, Unix: fcntl
+            try:
+                if os.name == 'nt':  # Windows
+                    import msvcrt
+                else:  # Unix/Linux/Mac
+                    import fcntl
+            except ImportError:
+                logger.warning("⚠️ File locking not available on this platform")
+
+            # Zaktualizuj lokalną kopię
+            config.BRAIN[fingerprint] = model_data
+
+            # Zapisz z blokadą pliku (ochrona przed race condition)
+            temp = f"{BRAIN_FILE}.tmp"
+            with open(temp, 'w', encoding='utf-8') as f:
+                try:
+                    if os.name == 'nt':  # Windows
+                        import msvcrt
+                        msvcrt.locking(f.fileno(), msvcrt.LK_LOCK, 1)
+                        json.dump(config.BRAIN, f, indent=2)
+                        msvcrt.locking(f.fileno(), msvcrt.LK_UNLCK, 1)
+                    else:  # Unix/Linux/Mac
+                        import fcntl
+                        fcntl.flock(f.fileno(), fcntl.LOCK_EX)  # Exclusive lock
+                        json.dump(config.BRAIN, f, indent=2)
+                        fcntl.flock(f.fileno(), fcntl.LOCK_UN)  # Unlock
+                except (ImportError, OSError):
+                    # Fallback bez blokady jeśli nie jest dostępna
+                    json.dump(config.BRAIN, f, indent=2)
+
+            os.replace(temp, BRAIN_FILE)
+
+            logger.info(f"✅ Brain signature saved to file: {fingerprint} -> {model_data.get('model', 'Unknown')}")
+            return True
+    except Exception as e:
+        logger.error(f"❌ Error saving brain signature: {e}")
+        return False
+
+def load_brain_signature(fingerprint):
+    """
+    Load a single brain signature from MongoDB.
+
+    Args:
+        fingerprint (str): Unique fingerprint key
+
+    Returns:
+        dict or None: Model data if found, None otherwise
+    """
+    import app.config as config
+
+    # Najpierw sprawdź lokalną kopię w pamięci
+    if fingerprint in config.BRAIN:
+        return config.BRAIN[fingerprint]
+
+    # Jeśli nie ma w pamięci, sprawdź MongoDB
+    if USE_MONGODB:
+        try:
+            brain_data = brain_collection.find_one(
+                {'_id': 'brain_v18'},
+                {f'data.{fingerprint}': 1}
+            )
+            if brain_data and 'data' in brain_data and fingerprint in brain_data['data']:
+                signature = brain_data['data'][fingerprint]
+                # Zaktualizuj lokalną kopię
+                config.BRAIN[fingerprint] = signature
+                return signature
+        except Exception as e:
+            logger.error(f"Error loading brain signature: {e}")
+
+    return None
 
 def get_verified_models():
     """Pobierz wszystkie zweryfikowane modele z MongoDB"""
