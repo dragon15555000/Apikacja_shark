@@ -63,5 +63,5 @@ RATE_LIMIT_STORAGE_URL = "memory://"
 CORS_ORIGINS = "*"  # W produkcji zmień na konkretne domeny
 
 # --- VERSION ---
-VERSION = "v18.24"
-VERSION_NAME = "UI IMPROVEMENTS: Smart AI suggestions with 'Add' buttons and conditional manual input"
+VERSION = "v18.25"
+VERSION_NAME = "ARCHITECTURE FIX: Atomic BRAIN writes - safe for multi-worker environments"
