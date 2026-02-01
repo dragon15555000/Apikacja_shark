@@ -157,13 +157,26 @@
             if(d.found) {
                 showResult(d.model,d.confidence,d.source.includes("AI")||d.source.includes("UA"));
                 if(d.codes) showCodes(d.codes);
+                // Ukryj sugestie i pole ręczne gdy model został znaleziony
+                document.getElementById('suggestionsTitle').style.display='none';
+                document.getElementById('suggestionsGroup').style.display='none';
+                document.getElementById('fixTitle').style.display='none';
+                document.getElementById('fixGroup').style.display='none';
             } else if(d.suggestions && d.suggestions.length > 0) {
                 showSuggestions(d.suggestions);
             } else {
                 runClientHeuristics(data);
+                // Pokaż pole ręczne gdy heurystyka nie dała pewnego wyniku
+                document.getElementById('fixTitle').style.display='block';
+                document.getElementById('fixGroup').style.display='block';
             }
-        }catch(e){runClientHeuristics(data);}
-        document.getElementById('fixTitle').style.display='block';document.getElementById('fixGroup').style.display='block';btn.innerText="Skanuj Ponownie";btn.disabled=false;
+        }catch(e){
+            runClientHeuristics(data);
+            // Pokaż pole ręczne przy błędzie
+            document.getElementById('fixTitle').style.display='block';
+            document.getElementById('fixGroup').style.display='block';
+        }
+        btn.innerText="Skanuj Ponownie";btn.disabled=false;
     }
     function runClientHeuristics(fp){
         let best={name:"Nieznany",score:0};
@@ -203,29 +216,74 @@
     function showSuggestions(suggestions){
         document.getElementById('suggestionsTitle').style.display='block';
         document.getElementById('suggestionsGroup').style.display='block';
+
+        // Sprawdź czy wszystkie TOP 3 mają niską pewność (< 40%)
+        const allLowConfidence = suggestions.every(s => s.confidence < 40);
+
         let html='';
         suggestions.forEach((s,i)=>{
-            html+='<div style="padding:12px;border-bottom:1px solid #E9E9EB;cursor:pointer;" onclick="selectSuggestion('+i+',\"'+s.model+'\")">'
+            // Kolor pewności: zielony (>=60), pomarańczowy (40-59), czerwony (<40)
+            const confColor = s.confidence >= 60 ? '#34C759' : (s.confidence >= 40 ? '#FF9500' : '#FF3B30');
+
+            html+='<div style="padding:12px;border-bottom:1px solid #E9E9EB;display:flex;justify-content:space-between;align-items:center;">'
+                +'<div style="flex:1;">'
                 +'<div style="font-weight:600;font-size:16px;color:#007AFF;">'+s.model+'</div>'
-                +'<div style="font-size:13px;color:#34C759;margin:4px 0;">Pewność: '+s.confidence+'%</div>'
+                +'<div style="font-size:13px;color:'+confColor+';margin:4px 0;font-weight:600;">Pewność: '+s.confidence+'%</div>'
                 +'<div style="font-size:12px;color:#8E8E93;">'+s.reasons.join(', ')+'</div>'
+                +'</div>'
+                +'<button onclick="selectAndTeach(\''+s.model.replace(/'/g, "\\'")+'\')" style="background:#34C759;color:white;border:none;padding:10px 20px;border-radius:8px;font-weight:600;font-size:14px;cursor:pointer;margin-left:10px;white-space:nowrap;">Dodaj</button>'
                 +'</div>';
         });
         document.getElementById('suggestionsList').innerHTML=html;
+
+        // Pokaż pole ręcznego wpisania TYLKO gdy wszystkie sugestie mają niską pewność
+        if(allLowConfidence) {
+            document.getElementById('fixTitle').style.display='block';
+            document.getElementById('fixGroup').style.display='block';
+            document.getElementById('customModel').placeholder='Wszystkie sugestie mają niską pewność. Wpisz model ręcznie...';
+        } else {
+            document.getElementById('fixTitle').style.display='none';
+            document.getElementById('fixGroup').style.display='none';
+        }
+
         showResult('Wybierz z sugestii poniżej',0,false);
     }
     function selectSuggestion(idx,model){
         document.getElementById('customModel').value=model;
         showResult(model,0,false);
     }
+    async function selectAndTeach(model){
+        if(!currentScanData){alert("⚠️ Brak danych skanowania!");return;}
+        if(!confirm("Czy na pewno chcesz nauczyć AI modelu:\n\n"+model+"?")){return;}
+        currentScanData.model=model;
+        try{
+            await fetch('/api/learn',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(currentScanData)});
+            alert("✅ Nauczono! Model: "+model);
+            showResult(model,100,true);
+            // Ukryj sugestie po nauczeniu
+            document.getElementById('suggestionsTitle').style.display='none';
+            document.getElementById('suggestionsGroup').style.display='none';
+            document.getElementById('fixTitle').style.display='none';
+            document.getElementById('fixGroup').style.display='none';
+        }catch(e){
+            alert("❌ Błąd podczas nauczania: "+e.message);
+        }
+    }
     async function teachBrain(){
         if(!currentScanData)return;
         const customModel=document.getElementById('customModel').value.trim();
         currentScanData.model=customModel;
         if(!currentScanData.model){alert("⚠️ Wpisz model telefonu!");return;}
-        await fetch('/api/learn',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(currentScanData)});
-        alert("✅ Nauczono! Model: "+currentScanData.model);
-        showResult(currentScanData.model,100,true);
-        document.getElementById('customModel').value='';
+        try{
+            await fetch('/api/learn',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(currentScanData)});
+            alert("✅ Nauczono! Model: "+currentScanData.model);
+            showResult(currentScanData.model,100,true);
+            document.getElementById('customModel').value='';
+            // Ukryj sugestie po nauczeniu
+            document.getElementById('suggestionsTitle').style.display='none';
+            document.getElementById('suggestionsGroup').style.display='none';
+        }catch(e){
+            alert("❌ Błąd podczas nauczania: "+e.message);
+        }
     }
 </script></body></html>
