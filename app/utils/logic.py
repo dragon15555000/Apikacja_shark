@@ -8,6 +8,19 @@ from app.config import USE_MONGODB, logger
 from app.models.heuristic_db import HEURISTIC_DB
 from app.database import verified_models_collection
 
+
+def detect_os(user_agent, gpu_lower):
+    """Detect OS family based on user agent or GPU hints."""
+    if user_agent:
+        ua_lower = user_agent.lower()
+        if "iphone" in ua_lower or "ipad" in ua_lower or "ios" in ua_lower:
+            return "ios"
+        if "android" in ua_lower:
+            return "android"
+    if "apple" in gpu_lower:
+        return "ios"
+    return "unknown"
+
 def parse_device_from_ua(ua):
     """Parse device identifier from User-Agent string (iOS and Android)"""
     if not ua or not isinstance(ua, str):
@@ -64,7 +77,7 @@ def parse_device_from_ua(ua):
         logger.error(f"Error parsing UA: {e}")
     return None
 
-def find_top_3_matches(width, height, refresh_rate, gpu, dpr, ram, cores):
+def find_top_3_matches(width, height, refresh_rate, gpu, dpr, ram, cores, user_agent=None):
     """
     Find top 3 best matching models using Weighted Scoring Algorithm with OS Segmentation.
 
@@ -77,7 +90,8 @@ def find_top_3_matches(width, height, refresh_rate, gpu, dpr, ram, cores):
     gpu_lower = gpu.lower()
 
     # OS Segmentation - wykryj iOS vs Android
-    is_ios = "apple" in gpu_lower or ram == -1
+    os_family = detect_os(user_agent, gpu_lower)
+    is_ios = os_family == "ios"
 
     # Wykryj symulację/emulację (GPU komputera zamiast telefonu)
     is_simulation = any(keyword in gpu_lower for keyword in ["intel", "nvidia", "amd", "angle", "swiftshader", "mesa"])
