@@ -63,5 +63,5 @@ RATE_LIMIT_STORAGE_URL = "memory://"
 CORS_ORIGINS = "*"  # W produkcji zmień na konkretne domeny
 
 # --- VERSION ---
-VERSION = "v18.25"
-VERSION_NAME = "ARCHITECTURE FIX: Atomic BRAIN writes - safe for multi-worker environments"
+VERSION = "v18.26"
+VERSION_NAME = "BUGFIX: Show actual algorithm score instead of 0% for low confidence matches"
