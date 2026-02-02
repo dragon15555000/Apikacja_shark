@@ -18,7 +18,9 @@ def register_admin_routes(app):
     @app.route('/admin')
     def admin_panel():
         """Admin panel - HTML page"""
-        return render_template('admin.html') if USE_MONGODB else jsonify({"error": "Admin panel requires MongoDB"}), 503
+        if USE_MONGODB:
+            return render_template('admin.html')
+        return jsonify({"error": "Admin panel requires MongoDB"}), 503
 
     @app.route('/admin/api/brain')
     def admin_get_brain():
