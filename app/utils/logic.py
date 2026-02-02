@@ -9,6 +9,32 @@ from app.models.heuristic_db import HEURISTIC_DB
 from app.database import verified_models_collection
 
 
+def normalize_gpu_string(gpu):
+    """Normalize GPU string for matching."""
+    if not gpu:
+        return ""
+    gpu_lower = gpu.lower()
+    gpu_lower = gpu_lower.replace("(tm)", "")
+    gpu_lower = re.sub(r"[@()/,:]", " ", gpu_lower)
+    gpu_lower = re.sub(r"\b(qualcomm|arm|gpu|graphics)\b", " ", gpu_lower)
+    gpu_lower = re.sub(r"\s+", " ", gpu_lower).strip()
+    return gpu_lower
+
+
+def normalize_viewport(width, height):
+    """Normalize viewport dimensions to reduce minor floating point noise."""
+    exact_width = round(width) if abs(width - round(width)) < 0.02 else width
+    exact_height = height
+    return exact_width, exact_height
+
+
+def build_signature(width, height, dpr, ram, refresh_rate, gpu, canvas_hash):
+    """Build canonical AI signature string."""
+    exact_width, exact_height = normalize_viewport(width, height)
+    dpr_rounded = round(float(dpr), 2)
+    return f"{exact_width}_{exact_height}_{dpr_rounded}_{ram}_{refresh_rate}_{gpu}_{canvas_hash}"
+
+
 def detect_os(user_agent, gpu_lower):
     """Detect OS family based on user agent or GPU hints."""
     if user_agent:
@@ -87,7 +113,7 @@ def find_top_3_matches(width, height, refresh_rate, gpu, dpr, ram, cores, user_a
     - Sprawdź logi w konsoli serwera, aby zobaczyć szczegóły punktacji
     """
     matches = []
-    gpu_lower = gpu.lower()
+    gpu_lower = normalize_gpu_string(gpu)
 
     # OS Segmentation - wykryj iOS vs Android
     os_family = detect_os(user_agent, gpu_lower)
@@ -132,9 +158,9 @@ def find_top_3_matches(width, height, refresh_rate, gpu, dpr, ram, cores, user_a
         # UWAGA: Normalizacja GPU - różne przeglądarki zwracają różne formaty
         # "Adreno (TM) 740" vs "Adreno 740 @ 680 MHz" - szukamy części wspólnej
         if not is_ios and specs["gpu"] and gpu_lower:
-            spec_gpu_lower = specs["gpu"].lower()
+            spec_gpu_lower = normalize_gpu_string(specs["gpu"])
             # Wyciągnij kluczowe słowa (np. "adreno 740" → ["adreno", "740"])
-            spec_gpu_parts = spec_gpu_lower.replace("(tm)", "").replace("@", " ").split()
+            spec_gpu_parts = spec_gpu_lower.split()
             # Sprawdź czy wszystkie kluczowe części są w GPU użytkownika
             if all(part in gpu_lower for part in spec_gpu_parts if len(part) > 2):
                 score += 40

@@ -6,7 +6,12 @@ from flask import request, jsonify
 from datetime import datetime
 from app.config import USE_MONGODB, BRAIN, EXTERNAL_DB, MAX_BRAIN_SIGNATURES, MAX_MODELS_PER_SIGNATURE, logger
 from app.models.identifiers import STATIC_IDENTIFIERS, ANDROID_IDENTIFIERS, ACCESSORY_CODES
-from app.utils.logic import parse_device_from_ua, find_top_3_matches
+from app.utils.logic import (
+    build_signature,
+    normalize_viewport,
+    parse_device_from_ua,
+    find_top_3_matches
+)
 from app.utils.validators import validate_json
 from app.database import detection_logs_collection, save_brain, save_brain_signature
 
@@ -50,8 +55,7 @@ def register_api_routes(app, limiter):
             user_agent = d.get('userAgent', '')
 
             # NORMALIZACJA VIEWPORT
-            exactWidth = round(width) if abs(width - round(width)) < 0.02 else width
-            exactHeight = height
+            exactWidth, exactHeight = normalize_viewport(width, height)
 
             dprVerified = d.get('dprVerified', True)
             isZoomed = d.get('isZoomed', False)
@@ -139,8 +143,15 @@ def register_api_routes(app, limiter):
                 })
 
             # Priorytet 3: Baza AI (fingerprint)
-            dpr_rounded = round(float(dpr), 2)
-            signature = f"{exactWidth}_{exactHeight}_{dpr_rounded}_{ram}_{refresh_rate}_{gpu}_{canvas_hash}"
+            signature = build_signature(
+                exactWidth,
+                exactHeight,
+                dpr,
+                ram,
+                refresh_rate,
+                gpu,
+                canvas_hash
+            )
 
             if signature in BRAIN:
                 models = BRAIN[signature]
@@ -320,11 +331,17 @@ def register_api_routes(app, limiter):
                 return jsonify({"error": "Invalid cores value"}), 400
 
             # NORMALIZACJA VIEWPORT
-            exactWidth = round(width) if abs(width - round(width)) < 0.02 else width
-            exactHeight = height
+            exactWidth, exactHeight = normalize_viewport(width, height)
 
-            dpr_rounded = round(float(dpr), 2)
-            signature = f"{exactWidth}_{exactHeight}_{dpr_rounded}_{ram}_{refresh_rate}_{gpu}_{canvas_hash}"
+            signature = build_signature(
+                exactWidth,
+                exactHeight,
+                dpr,
+                ram,
+                refresh_rate,
+                gpu,
+                canvas_hash
+            )
 
             # Pobierz aktualną sygnaturę z BRAIN (może być zaktualizowana przez inny worker)
             if signature not in BRAIN:
