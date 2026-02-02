@@ -247,7 +247,9 @@
             document.getElementById('fixGroup').style.display='none';
         }
 
-        showResult('Wybierz z sugestii poniżej',0,false);
+        // Pokaż najlepszą sugestię z jej rzeczywistą pewnością (zamiast 0%)
+        const topSuggestion = suggestions[0];
+        showResult(topSuggestion.model, topSuggestion.confidence, true);
     }
     function selectSuggestion(idx,model){
         document.getElementById('customModel').value=model;
