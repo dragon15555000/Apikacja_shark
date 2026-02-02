@@ -198,10 +198,19 @@ def find_top_3_matches(width, height, refresh_rate, gpu, dpr, ram, cores, user_a
         # 5. Hz (Waga: 5 bonus / -10 kara) - Rozróżnia Pro/Base
         if specs["hz"] and refresh_rate:
             if abs(specs["hz"] - refresh_rate) < 5:
-                score += 5
+                score += 15 if is_ios else 5
                 reasons.append(f"Hz: {specs['hz']}Hz")
             else:
-                score -= 10  # Kara za niezgodność (np. iPhone 16 vs 15 Pro)
+                score -= 20 if is_ios else 10  # Kara za niezgodność (np. iPhone 16 vs 15 Pro)
+
+            # Twarde rozróżnienie kolizji viewportu dla iOS (393x852 @3.0)
+            if is_ios and specs["w"] == 393 and specs["h"] == 852 and abs(specs["dpr"] - 3.0) < 0.01:
+                if refresh_rate <= 90 and "pro" in model_name.lower():
+                    score -= 30
+                    reasons.append("Kara: Hz ~60 dla modelu Pro")
+                elif refresh_rate >= 100 and "pro" not in model_name.lower():
+                    score -= 30
+                    reasons.append("Kara: Hz ~120 dla modelu bazowego")
 
         # 6. RAM (Waga: 5 Android / 0 iOS) - słaby sygnał
         # UWAGA: navigator.deviceMemory zaokrągla wartości (12GB → 8GB)
