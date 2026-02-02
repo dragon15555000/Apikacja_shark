@@ -8,6 +8,53 @@ from app.config import USE_MONGODB, logger
 from app.models.heuristic_db import HEURISTIC_DB
 from app.database import verified_models_collection
 
+
+def normalize_gpu_string(gpu):
+    """Normalize GPU string for matching."""
+    if not gpu:
+        logger.warning("⚠️ GPU string missing or empty; using empty normalization")
+        return ""
+    gpu_lower = gpu.lower()
+    gpu_lower = gpu_lower.replace("(tm)", "")
+    gpu_lower = re.sub(r"[@()/,:]", " ", gpu_lower)
+    gpu_lower = re.sub(r"\b(qualcomm|arm|gpu|graphics)\b", " ", gpu_lower)
+    gpu_lower = re.sub(r"\s+", " ", gpu_lower).strip()
+    return gpu_lower
+
+
+def normalize_viewport(width, height):
+    """Normalize viewport dimensions to reduce minor floating point noise."""
+    if width is None or height is None:
+        logger.warning(f"⚠️ Missing viewport dimensions: width={width}, height={height}")
+        return width, height
+    exact_width = round(width) if abs(width - round(width)) < 0.02 else width
+    exact_height = height
+    return exact_width, exact_height
+
+
+def build_signature(width, height, dpr, ram, refresh_rate, gpu, canvas_hash):
+    """Build canonical AI signature string."""
+    exact_width, exact_height = normalize_viewport(width, height)
+    if canvas_hash in (None, ""):
+        logger.warning("⚠️ Missing canvas hash; signature may be less stable")
+    dpr_rounded = round(float(dpr), 2)
+    return f"{exact_width}_{exact_height}_{dpr_rounded}_{ram}_{refresh_rate}_{gpu}_{canvas_hash}"
+
+
+def detect_os(user_agent, gpu_lower):
+    """Detect OS family based on user agent or GPU hints."""
+    if user_agent:
+        ua_lower = user_agent.lower()
+        if "iphone" in ua_lower or "ipad" in ua_lower or "ios" in ua_lower:
+            return "ios"
+        if "android" in ua_lower:
+            return "android"
+    if "apple" in gpu_lower:
+        return "ios"
+    if user_agent:
+        logger.info("ℹ️ OS family unknown from UA and GPU hints")
+    return "unknown"
+
 def parse_device_from_ua(ua):
     """Parse device identifier from User-Agent string (iOS and Android)"""
     if not ua or not isinstance(ua, str):
@@ -64,7 +111,7 @@ def parse_device_from_ua(ua):
         logger.error(f"Error parsing UA: {e}")
     return None
 
-def find_top_3_matches(width, height, refresh_rate, gpu, dpr, ram, cores):
+def find_top_3_matches(width, height, refresh_rate, gpu, dpr, ram, cores, user_agent=None):
     """
     Find top 3 best matching models using Weighted Scoring Algorithm with OS Segmentation.
 
@@ -74,10 +121,13 @@ def find_top_3_matches(width, height, refresh_rate, gpu, dpr, ram, cores):
     - Sprawdź logi w konsoli serwera, aby zobaczyć szczegóły punktacji
     """
     matches = []
-    gpu_lower = gpu.lower()
+    gpu_lower = normalize_gpu_string(gpu)
 
     # OS Segmentation - wykryj iOS vs Android
-    is_ios = "apple" in gpu_lower or ram == -1
+    os_family = detect_os(user_agent, gpu_lower)
+    is_ios = os_family == "ios"
+    if os_family == "unknown":
+        logger.info(f"ℹ️ OS family unknown; continuing with neutral scoring. UA={user_agent!r}")
 
     # Wykryj symulację/emulację (GPU komputera zamiast telefonu)
     is_simulation = any(keyword in gpu_lower for keyword in ["intel", "nvidia", "amd", "angle", "swiftshader", "mesa"])
@@ -85,6 +135,8 @@ def find_top_3_matches(width, height, refresh_rate, gpu, dpr, ram, cores):
     logger.info(f"📍 Weighted Scoring - OS: {'iOS' if is_ios else 'Android'}, DPR: {dpr}, RAM: {ram}, GPU: {gpu}")
     if is_simulation:
         logger.warning(f"⚠️ SYMULACJA WYKRYTA! GPU komputera: {gpu[:50]}")
+    if refresh_rate in (None, -1, 0):
+        logger.warning("⚠️ Refresh rate missing or invalid; Hz-based scoring will be skipped")
 
     # Pobierz zweryfikowane modele z MongoDB (jeśli dostępne)
     verified_models = {}
@@ -110,87 +162,100 @@ def find_top_3_matches(width, height, refresh_rate, gpu, dpr, ram, cores):
 
     logger.info(f"🔍 Searching in {len(all_models)} models ({len(HEURISTIC_DB)} heuristic + {len(verified_models)} verified)")
 
-    for model_name, specs in all_models.items():
-        score = 0
-        reasons = []
+    try:
+        for model_name, specs in all_models.items():
+            score = 0
+            reasons = []
 
-        # 1. GPU (Waga: 40 Android / 0 iOS)
-        # UWAGA: Normalizacja GPU - różne przeglądarki zwracają różne formaty
-        # "Adreno (TM) 740" vs "Adreno 740 @ 680 MHz" - szukamy części wspólnej
-        if not is_ios and specs["gpu"] and gpu_lower:
-            spec_gpu_lower = specs["gpu"].lower()
-            # Wyciągnij kluczowe słowa (np. "adreno 740" → ["adreno", "740"])
-            spec_gpu_parts = spec_gpu_lower.replace("(tm)", "").replace("@", " ").split()
-            # Sprawdź czy wszystkie kluczowe części są w GPU użytkownika
-            if all(part in gpu_lower for part in spec_gpu_parts if len(part) > 2):
-                score += 40
-                reasons.append(f"GPU: {specs['gpu']}")
-            # Fallback: prosta zawartość
-            elif spec_gpu_lower in gpu_lower:
-                score += 40
-                reasons.append(f"GPU: {specs['gpu']}")
+            # 1. GPU (Waga: 40 Android / 0 iOS)
+            # UWAGA: Normalizacja GPU - różne przeglądarki zwracają różne formaty
+            # "Adreno (TM) 740" vs "Adreno 740 @ 680 MHz" - szukamy części wspólnej
+            if not is_ios and specs["gpu"] and gpu_lower:
+                spec_gpu_lower = normalize_gpu_string(specs["gpu"])
+                # Wyciągnij kluczowe słowa (np. "adreno 740" → ["adreno", "740"])
+                spec_gpu_parts = spec_gpu_lower.split()
+                # Sprawdź czy wszystkie kluczowe części są w GPU użytkownika
+                if all(part in gpu_lower for part in spec_gpu_parts if len(part) > 2):
+                    score += 40
+                    reasons.append(f"GPU: {specs['gpu']}")
+                # Fallback: prosta zawartość
+                elif spec_gpu_lower in gpu_lower:
+                    score += 40
+                    reasons.append(f"GPU: {specs['gpu']}")
 
-        # 2. Viewport Width (Waga: 50 iOS / 20 Android)
-        if specs["w"] == width:
-            score += 50 if is_ios else 20
-            reasons.append(f"Szerokość: {specs['w']}px")
-        elif not is_ios and abs(specs["w"] - width) <= 40:
-            score += 10
-            reasons.append(f"Szerokość ~{specs['w']}px")
+            # 2. Viewport Width (Waga: 50 iOS / 20 Android)
+            if specs["w"] == width:
+                score += 50 if is_ios else 20
+                reasons.append(f"Szerokość: {specs['w']}px")
+            elif not is_ios and abs(specs["w"] - width) <= 40:
+                score += 10
+                reasons.append(f"Szerokość ~{specs['w']}px")
 
-        # 3. Viewport Height (Waga: 30 iOS / 10 Android) - z tolerancją na pasek adresu
-        if specs["h"] == height:
-            score += 30 if is_ios else 10
-            reasons.append(f"Wysokość: {specs['h']}px")
-        elif height < specs["h"] and height > (specs["h"] - 160):
-            # Tolerancja na pasek adresu (100-160px)
-            score += 25 if is_ios else 8
-            reasons.append(f"Wysokość ~{specs['h']}px (pasek adresu)")
+            # 3. Viewport Height (Waga: 30 iOS / 10 Android) - z tolerancją na pasek adresu
+            if specs["h"] == height:
+                score += 30 if is_ios else 10
+                reasons.append(f"Wysokość: {specs['h']}px")
+            elif height < specs["h"] and height > (specs["h"] - 160):
+                # Tolerancja na pasek adresu (100-160px)
+                score += 25 if is_ios else 8
+                reasons.append(f"Wysokość ~{specs['h']}px (pasek adresu)")
 
-        # 4. DPR (Waga: 20 iOS / 25 Android) - KLUCZOWE!
-        if abs(specs["dpr"] - dpr) < 0.1:
-            score += 20 if is_ios else 25
-            reasons.append(f"DPR: {specs['dpr']}x")
-        elif abs(specs["dpr"] - dpr) < 0.5:
-            score += 10
-            reasons.append(f"DPR ~{specs['dpr']}x")
+            # 4. DPR (Waga: 20 iOS / 25 Android) - KLUCZOWE!
+            if abs(specs["dpr"] - dpr) < 0.1:
+                score += 20 if is_ios else 25
+                reasons.append(f"DPR: {specs['dpr']}x")
+            elif abs(specs["dpr"] - dpr) < 0.5:
+                score += 10
+                reasons.append(f"DPR ~{specs['dpr']}x")
 
-        # 5. Hz (Waga: 5 bonus / -10 kara) - Rozróżnia Pro/Base
-        if specs["hz"] and refresh_rate:
-            if abs(specs["hz"] - refresh_rate) < 5:
-                score += 5
-                reasons.append(f"Hz: {specs['hz']}Hz")
-            else:
-                score -= 10  # Kara za niezgodność (np. iPhone 16 vs 15 Pro)
+            # 5. Hz (Waga: 5 bonus / -10 kara) - Rozróżnia Pro/Base
+            if specs["hz"] and refresh_rate:
+                if abs(specs["hz"] - refresh_rate) < 5:
+                    score += 15 if is_ios else 5
+                    reasons.append(f"Hz: {specs['hz']}Hz")
+                else:
+                    score -= 20 if is_ios else 10  # Kara za niezgodność (np. iPhone 16 vs 15 Pro)
 
-        # 6. RAM (Waga: 5 Android / 0 iOS) - słaby sygnał
-        # UWAGA: navigator.deviceMemory zaokrągla wartości (12GB → 8GB)
-        if not is_ios and ram > 0 and specs["ram"] > 0:
-            # Użyj >= zamiast == bo Chrome zaokrągla RAM w dół
-            if ram >= specs["ram"] or abs(specs["ram"] - ram) <= 2:
-                score += 5
-                reasons.append(f"RAM: ~{specs['ram']}GB")
+                # Twarde rozróżnienie kolizji viewportu dla iOS (393x852 @3.0)
+                if is_ios and specs["w"] == 393 and specs["h"] == 852 and abs(specs["dpr"] - 3.0) < 0.01:
+                    if refresh_rate <= 90 and "pro" in model_name.lower():
+                        score -= 30
+                        reasons.append("Kara: Hz ~60 dla modelu Pro")
+                    elif refresh_rate >= 100 and "pro" not in model_name.lower():
+                        score -= 30
+                        reasons.append("Kara: Hz ~120 dla modelu bazowego")
 
-        if score > 0:
-            # Jeśli wykryto symulację, dodaj flagę
-            if is_simulation and score >= 100:
-                # Idealny match ale GPU komputera = prawdopodobnie symulacja
-                matches.append({
-                    "model": model_name + " (symulacja?)",
-                    "confidence": min(score, 100),
-                    "reasons": reasons + ["⚠️ GPU komputera wykryty"],
-                    "raw_score": score,
-                    "is_simulation": True
-                })
-            else:
-                # Normalne rozpoznanie
-                matches.append({
-                    "model": model_name,
-                    "confidence": min(score, 100),
-                    "reasons": reasons,
-                    "raw_score": score,
-                    "is_simulation": False
-                })
+            # 6. RAM (Waga: 5 Android / 0 iOS) - słaby sygnał
+            # UWAGA: navigator.deviceMemory zaokrągla wartości (12GB → 8GB)
+            if not is_ios and ram > 0 and specs["ram"] > 0:
+                # Użyj >= zamiast == bo Chrome zaokrągla RAM w dół
+                if ram >= specs["ram"] or abs(specs["ram"] - ram) <= 2:
+                    score += 5
+                    reasons.append(f"RAM: ~{specs['ram']}GB")
+
+            if score > 0:
+                # Jeśli wykryto symulację, dodaj flagę
+                if is_simulation and score >= 100:
+                    # Idealny match ale GPU komputera = prawdopodobnie symulacja
+                    matches.append({
+                        "model": model_name + " (symulacja?)",
+                        "confidence": min(score, 100),
+                        "reasons": reasons + ["⚠️ GPU komputera wykryty"],
+                        "raw_score": score,
+                        "is_simulation": True
+                    })
+                else:
+                    # Normalne rozpoznanie
+                    matches.append({
+                        "model": model_name,
+                        "confidence": min(score, 100),
+                        "reasons": reasons,
+                        "raw_score": score,
+                        "is_simulation": False
+                    })
+    except Exception as e:
+        logger.error(f"❌ Error during heuristic scoring: {e}", exc_info=True)
+        return []
 
     # Sortuj po confidence i zwróć top 3
     matches.sort(key=lambda x: x["confidence"], reverse=True)
@@ -203,6 +268,9 @@ def find_top_3_matches(width, height, refresh_rate, gpu, dpr, ram, cores):
 
     # Jeśli nie ma dopasowań, zaloguj to
     if not matches:
-        logger.warning(f"⚠️ BRAK DOPASOWAŃ! Parametry: W={width}, H={height}, DPR={dpr}, RAM={ram}, Hz={refresh_rate}, GPU={gpu[:30]}")
+        logger.warning(
+            "⚠️ BRAK DOPASOWAŃ! Parametry: "
+            f"W={width}, H={height}, DPR={dpr}, RAM={ram}, Hz={refresh_rate}, GPU={gpu[:30]}"
+        )
 
     return matches[:3]
