@@ -140,7 +140,7 @@ def register_api_routes(app, limiter):
 
             # Priorytet 3: Baza AI (fingerprint)
             dpr_rounded = round(float(dpr), 2)
-            signature = f"{width}_{height}_{dpr_rounded}_{ram}_{refresh_rate}_{gpu}_{canvas_hash}"
+            signature = f"{exactWidth}_{exactHeight}_{dpr_rounded}_{ram}_{refresh_rate}_{gpu}_{canvas_hash}"
 
             if signature in BRAIN:
                 models = BRAIN[signature]
@@ -179,7 +179,16 @@ def register_api_routes(app, limiter):
                 })
 
             # Priorytet 4: Heurystyka
-            suggestions = find_top_3_matches(exactWidth, exactHeight, refresh_rate, gpu, dpr, ram, cores)
+            suggestions = find_top_3_matches(
+                exactWidth,
+                exactHeight,
+                refresh_rate,
+                gpu,
+                dpr,
+                ram,
+                cores,
+                user_agent=user_agent
+            )
 
             if suggestions:
                 detection_log["method"] = "HEURISTIC_TOP3"
@@ -310,8 +319,12 @@ def register_api_routes(app, limiter):
             if not isinstance(cores, (int, float)) or cores < -1 or cores > 100:
                 return jsonify({"error": "Invalid cores value"}), 400
 
+            # NORMALIZACJA VIEWPORT
+            exactWidth = round(width) if abs(width - round(width)) < 0.02 else width
+            exactHeight = height
+
             dpr_rounded = round(float(dpr), 2)
-            signature = f"{width}_{height}_{dpr_rounded}_{ram}_{refresh_rate}_{gpu}_{canvas_hash}"
+            signature = f"{exactWidth}_{exactHeight}_{dpr_rounded}_{ram}_{refresh_rate}_{gpu}_{canvas_hash}"
 
             # Pobierz aktualną sygnaturę z BRAIN (może być zaktualizowana przez inny worker)
             if signature not in BRAIN:
