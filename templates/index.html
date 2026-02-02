@@ -193,7 +193,8 @@
             if(s>best.score)best={name:m.name,score:s};
         });
         console.log("🎯 Best match:",best.name,"Score:",best.score);
-        showResult(best.name,best.score>=60?best.score:0,false);
+        // Zawsze pokazuj rzeczywisty score, nawet jeśli < 60 (dla debugowania)
+        showResult(best.name, best.score, false);
     }
     function showResult(m,c,ai){const d=document.getElementById('displayModel'),b=document.getElementById('displayConf');d.innerText=m;b.innerText=ai?'🧠 PEWNOŚĆ: ' + c + '%':'⚙️ ALGORYTM: ' + c + '%';b.style.background=ai?'#eef5ff':'#f2f2f7';b.style.color=ai?'#007aff':'#8e8e93';}
     function showCodes(codes){
