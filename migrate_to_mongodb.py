@@ -9,7 +9,7 @@ import os
 from pymongo import MongoClient
 
 # Konfiguracja MongoDB
-MONGODB_URI = "mongodb+srv://marcingallos_db_user:jo8Fq0fO8nSTKMl1@cluster0.kwfvduq.mongodb.net/?retryWrites=true&w=majority"
+MONGODB_URI = "mongodb+srv://"
 MONGODB_DB = "shark_db"
 
 def migrate_brain_to_mongodb():

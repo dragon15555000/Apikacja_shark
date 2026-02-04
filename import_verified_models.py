@@ -8,7 +8,7 @@ import os
 from pymongo import MongoClient
 
 # Konfiguracja MongoDB
-MONGODB_URI = os.environ.get('MONGODB_URI', "mongodb+srv://marcingallos_db_user:jo8Fq0fO8nSTKMl1@cluster0.kwfvduq.mongodb.net/?retryWrites=true&w=majority")
+MONGODB_URI = os.environ.get('MONGODB_URI', "mongodb+srv://")
 MONGODB_DB = os.environ.get('MONGODB_DB', 'shark_db')
 
 # 14 sprawdzonych modeli z tabeli
