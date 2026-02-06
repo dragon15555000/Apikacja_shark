@@ -63,5 +63,5 @@ RATE_LIMIT_STORAGE_URL = "memory://"
 CORS_ORIGINS = "*"  # W produkcji zmień na konkretne domeny
 
 # --- VERSION ---
-VERSION = "v18.29"
-VERSION_NAME = "BUGFIX: Browser-independent signatures - same phone = same signature (removed canvas_hash)"
+VERSION = "v18.30"
+VERSION_NAME = "IMPROVEMENT: GPU-based desktop detection - more reliable than resolution check"
