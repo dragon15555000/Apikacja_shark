@@ -120,6 +120,17 @@
         // Dodatkowe flagi diagnostyczne
         const isZoomed = dpr !== Math.round(dpr); // Flaga: czy DPR jest ułamkowe (Display Zoom?)
 
+        // 🖥️ DETEKCJA KOMPUTERA/LAPTOPA - Zabezpieczenie przed symulacją
+        const isDesktop = w > 1200 || h > 1000 || (w > 800 && h > 600 && dpr < 2);
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+        if(isDesktop && !isMobile) {
+            btn.innerText="Skanuj Ponownie";
+            btn.disabled=false;
+            showDesktopWarning(w, h, dpr);
+            return; // Zatrzymaj skanowanie - to nie jest telefon!
+        }
+
         const data={
             w:w,
             h:h,
@@ -197,6 +208,27 @@
         showResult(best.name, best.score, false);
     }
     function showResult(m,c,ai){const d=document.getElementById('displayModel'),b=document.getElementById('displayConf');d.innerText=m;b.innerText=ai?'🧠 PEWNOŚĆ: ' + c + '%':'⚙️ ALGORYTM: ' + c + '%';b.style.background=ai?'#eef5ff':'#f2f2f7';b.style.color=ai?'#007aff':'#8e8e93';}
+    function showDesktopWarning(w,h,dpr){
+        const d=document.getElementById('displayModel'),b=document.getElementById('displayConf');
+        d.innerHTML='🖥️ Hej! To komputer, nie telefon! 😅';
+        b.innerHTML='<div style="padding:10px;line-height:1.6;">'+
+            '<strong>🤖 SHARK wykrył:</strong><br>'+
+            '📐 Rozdzielczość: '+Math.round(w)+' x '+Math.round(h)+'px<br>'+
+            '🔍 DPR: '+dpr+'x<br><br>'+
+            '<strong>💡 To wygląda na komputer/laptop!</strong><br>'+
+            'SHARK rozpoznaje tylko <strong>telefony</strong> 📱<br><br>'+
+            '<strong>🎯 Jak przetestować?</strong><br>'+
+            '1️⃣ Otwórz na telefonie (ta sama sieć WiFi)<br>'+
+            '2️⃣ Użyj Chrome DevTools (F12 → Ctrl+Shift+M)<br>'+
+            '3️⃣ Wybierz symulację: iPhone, Samsung, Pixel<br><br>'+
+            '<em>Sorry Gregory, nie identyfikuję komputerów! 🙈</em>'+
+            '</div>';
+        b.style.background='linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+        b.style.color='white';
+        b.style.fontSize='14px';
+        b.style.textAlign='left';
+        document.getElementById('result-hero').style.display='block';
+    }
     function showCodes(codes){
         if(!codes || (!codes.screen && !codes.case)) return;
         document.getElementById('codesSection').style.display='block';

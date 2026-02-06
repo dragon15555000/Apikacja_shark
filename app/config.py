@@ -63,5 +63,5 @@ RATE_LIMIT_STORAGE_URL = "memory://"
 CORS_ORIGINS = "*"  # W produkcji zmień na konkretne domeny
 
 # --- VERSION ---
-VERSION = "v18.27"
-VERSION_NAME = "BUGFIX: Show top AI suggestion confidence instead of 0% in suggestions view"
+VERSION = "v18.28"
+VERSION_NAME = "FEATURE: Desktop detection with funny warning - SHARK only identifies phones!"
