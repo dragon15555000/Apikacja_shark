@@ -63,5 +63,5 @@ RATE_LIMIT_STORAGE_URL = "memory://"
 CORS_ORIGINS = "*"  # W produkcji zmień na konkretne domeny
 
 # --- VERSION ---
-VERSION = "v18.30"
+VERSION = "v18.32"
 VERSION_NAME = "IMPROVEMENT: GPU-based desktop detection - more reliable than resolution check"
