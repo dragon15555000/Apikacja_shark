@@ -32,13 +32,20 @@ def normalize_viewport(width, height):
     return exact_width, exact_height
 
 
-def build_signature(width, height, dpr, ram, refresh_rate, gpu, canvas_hash):
-    """Build canonical AI signature string."""
+def build_signature(width, height, dpr, ram, refresh_rate, gpu, canvas_hash=None):
+    """
+    Build canonical AI signature string.
+
+    NOTE: canvas_hash is REMOVED from signature to ensure the same phone
+    has the same signature regardless of browser (Chrome, Safari, Firefox, etc.)
+
+    Signature format: width_height_dpr_ram_hz_gpu
+    Example: 414_896_2.0_-1_60_apple gpu
+    """
     exact_width, exact_height = normalize_viewport(width, height)
-    if canvas_hash in (None, ""):
-        logger.warning("⚠️ Missing canvas hash; signature may be less stable")
     dpr_rounded = round(float(dpr), 2)
-    return f"{exact_width}_{exact_height}_{dpr_rounded}_{ram}_{refresh_rate}_{gpu}_{canvas_hash}"
+    # ✅ USUNIĘTO canvas_hash - ten sam telefon = ta sama sygnatura!
+    return f"{exact_width}_{exact_height}_{dpr_rounded}_{ram}_{refresh_rate}_{gpu}"
 
 
 def detect_os(user_agent, gpu_lower):

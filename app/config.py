@@ -63,5 +63,5 @@ RATE_LIMIT_STORAGE_URL = "memory://"
 CORS_ORIGINS = "*"  # W produkcji zmień na konkretne domeny
 
 # --- VERSION ---
-VERSION = "v18.28"
-VERSION_NAME = "FEATURE: Desktop detection with funny warning - SHARK only identifies phones!"
+VERSION = "v18.29"
+VERSION_NAME = "BUGFIX: Browser-independent signatures - same phone = same signature (removed canvas_hash)"
