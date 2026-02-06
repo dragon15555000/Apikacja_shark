@@ -191,27 +191,27 @@ def find_top_3_matches(width, height, refresh_rate, gpu, dpr, ram, cores, user_a
                     reasons.append(f"GPU: {specs['gpu']}")
 
             # 2. Viewport Width (Waga: 50 iOS / 20 Android)
-            if specs["w"] == width:
+            if width is not None and specs["w"] == width:
                 score += 50 if is_ios else 20
                 reasons.append(f"Szerokość: {specs['w']}px")
-            elif not is_ios and abs(specs["w"] - width) <= 40:
+            elif not is_ios and width is not None and abs(specs["w"] - width) <= 40:
                 score += 10
                 reasons.append(f"Szerokość ~{specs['w']}px")
 
             # 3. Viewport Height (Waga: 30 iOS / 10 Android) - z tolerancją na pasek adresu
-            if specs["h"] == height:
+            if height is not None and specs["h"] == height:
                 score += 30 if is_ios else 10
                 reasons.append(f"Wysokość: {specs['h']}px")
-            elif height < specs["h"] and height > (specs["h"] - 160):
+            elif height is not None and height < specs["h"] and height > (specs["h"] - 160):
                 # Tolerancja na pasek adresu (100-160px)
                 score += 25 if is_ios else 8
                 reasons.append(f"Wysokość ~{specs['h']}px (pasek adresu)")
 
             # 4. DPR (Waga: 20 iOS / 25 Android) - KLUCZOWE!
-            if abs(specs["dpr"] - dpr) < 0.1:
+            if dpr is not None and abs(specs["dpr"] - dpr) < 0.1:
                 score += 20 if is_ios else 25
                 reasons.append(f"DPR: {specs['dpr']}x")
-            elif abs(specs["dpr"] - dpr) < 0.5:
+            elif dpr is not None and abs(specs["dpr"] - dpr) < 0.5:
                 score += 10
                 reasons.append(f"DPR ~{specs['dpr']}x")
 
@@ -234,16 +234,16 @@ def find_top_3_matches(width, height, refresh_rate, gpu, dpr, ram, cores, user_a
 
             # 6. RAM (Waga: 5 Android / 0 iOS) - słaby sygnał
             # UWAGA: navigator.deviceMemory zaokrągla wartości (12GB → 8GB)
-            if not is_ios and ram > 0 and specs["ram"] > 0:
+            if not is_ios and ram is not None and ram > 0 and specs["ram"] > 0:
                 # Użyj >= zamiast == bo Chrome zaokrągla RAM w dół
                 if ram >= specs["ram"] or abs(specs["ram"] - ram) <= 2:
                     score += 5
                     reasons.append(f"RAM: ~{specs['ram']}GB")
 
             if score > 0:
-                # Jeśli wykryto symulację, dodaj flagę
-                if is_simulation and score >= 100:
-                    # Idealny match ale GPU komputera = prawdopodobnie symulacja
+                # Jeśli wykryto symulację, dodaj flagę (nawet dla niskiego score)
+                if is_simulation:
+                    # GPU komputera wykryty = prawdopodobnie symulacja
                     matches.append({
                         "model": model_name + " (symulacja?)",
                         "confidence": min(score, 100),
@@ -275,9 +275,10 @@ def find_top_3_matches(width, height, refresh_rate, gpu, dpr, ram, cores, user_a
 
     # Jeśli nie ma dopasowań, zaloguj to
     if not matches:
+        gpu_str = gpu[:30] if gpu else "None"
         logger.warning(
             "⚠️ BRAK DOPASOWAŃ! Parametry: "
-            f"W={width}, H={height}, DPR={dpr}, RAM={ram}, Hz={refresh_rate}, GPU={gpu[:30]}"
+            f"W={width}, H={height}, DPR={dpr}, RAM={ram}, Hz={refresh_rate}, GPU={gpu_str}"
         )
 
     return matches[:3]
