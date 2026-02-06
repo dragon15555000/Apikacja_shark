@@ -123,13 +123,21 @@
         const isZoomed = dpr !== Math.round(dpr); // Flaga: czy DPR jest ułamkowe (Display Zoom?)
 
         // 🖥️ DETEKCJA KOMPUTERA/LAPTOPA - Zabezpieczenie przed symulacją
-        const isDesktop = w > 1200 || h > 1000 || (w > 800 && h > 600 && dpr < 2);
+        // Sprawdź GPU - to najbardziej pewny wskaźnik!
+        const desktopGPUs = /intel|nvidia|geforce|radeon|amd|quadro|intel\(r\) uhd|intel\(r\) iris|mesa/i;
+        const isDesktopGPU = desktopGPUs.test(gpu.toLowerCase());
+
+        // Sprawdź User-Agent
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-        if(isDesktop && !isMobile) {
+        // Sprawdź rozdzielczość (backup check)
+        const isDesktopResolution = w > 1200 || h > 1000 || (w > 800 && h > 600 && dpr < 2);
+
+        // BLOKUJ jeśli: Desktop GPU LUB (Desktop Resolution I NIE Mobile UA)
+        if(isDesktopGPU || (isDesktopResolution && !isMobile)) {
             btn.innerText="Skanuj Ponownie";
             btn.disabled=false;
-            showDesktopWarning(w, h, dpr);
+            showDesktopWarning(w, h, dpr, gpu, isDesktopGPU);
             return; // Zatrzymaj skanowanie - to nie jest telefon!
         }
 
@@ -210,13 +218,26 @@
         showResult(best.name, best.score, false);
     }
     function showResult(m,c,ai){const d=document.getElementById('displayModel'),b=document.getElementById('displayConf');d.innerText=m;b.innerText=ai?'🧠 PEWNOŚĆ: ' + c + '%':'⚙️ ALGORYTM: ' + c + '%';b.style.background=ai?'#eef5ff':'#f2f2f7';b.style.color=ai?'#007aff':'#8e8e93';}
-    function showDesktopWarning(w,h,dpr){
+    function showDesktopWarning(w,h,dpr,gpu,isDesktopGPU){
         const d=document.getElementById('displayModel'),b=document.getElementById('displayConf');
         d.innerHTML='🖥️ Hej! To komputer, nie telefon! 😅';
+
+        let reason = '';
+        if(isDesktopGPU) {
+            reason = '<strong>🎮 Wykryto kartę graficzną komputera!</strong><br>'+
+                     '🔴 GPU: <code>'+gpu+'</code><br>'+
+                     'To Intel/NVIDIA/AMD - typowe dla PC/laptopów<br><br>';
+        } else {
+            reason = '<strong>📐 Wykryto rozdzielczość komputera!</strong><br>'+
+                     'Rozdzielczość: '+Math.round(w)+' x '+Math.round(h)+'px<br><br>';
+        }
+
         b.innerHTML='<div style="padding:10px;line-height:1.6;">'+
             '<strong>🤖 SHARK wykrył:</strong><br>'+
             '📐 Rozdzielczość: '+Math.round(w)+' x '+Math.round(h)+'px<br>'+
-            '🔍 DPR: '+dpr+'x<br><br>'+
+            '🔍 DPR: '+dpr+'x<br>'+
+            '🎮 GPU: '+gpu+'<br><br>'+
+            reason+
             '<strong>💡 To wygląda na komputer/laptop!</strong><br>'+
             'SHARK rozpoznaje tylko <strong>telefony</strong> 📱<br><br>'+
             '<strong>🎯 Jak przetestować?</strong><br>'+
