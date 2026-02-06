@@ -28,7 +28,7 @@ def normalize_viewport(width, height):
         logger.warning(f"⚠️ Missing viewport dimensions: width={width}, height={height}")
         return width, height
     exact_width = round(width) if abs(width - round(width)) < 0.02 else width
-    exact_height = height
+    exact_height = round(height) if abs(height - round(height)) < 0.02 else height
     return exact_width, exact_height
 
 
