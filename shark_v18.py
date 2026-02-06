@@ -333,6 +333,7 @@ CLIENT_HTML = """
     <meta name="theme-color" content="#F2F2F7">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <title>SHARK v18 Final</title>
+    <title>SHARK v18.26</title>
     <style>
         :root { --ios-bg: #F2F2F7; --ios-card: #FFF; --ios-blue: #007AFF; --ios-green: #34C759; --ios-text: #000; --ios-sub: #8E8E93; --ios-sep: #C6C6C8; }
         body { font-family: -apple-system, sans-serif; background: var(--ios-bg); margin: 0; padding: env(safe-area-inset-top) 0 20px 0; color: var(--ios-text); -webkit-font-smoothing: antialiased; }
@@ -361,6 +362,7 @@ CLIENT_HTML = """
 </head>
 <body>
     <div class="header"><h1>SHARK v18</h1><div class="status">ONLINE • HTTPS</div></div>
+    <div class="header"><h1>SHARK v18.26</h1><div class="status">ONLINE • HTTPS</div></div>
     <div id="result-hero"><div class="model-name" id="displayModel">...</div><div class="conf-badge" id="displayConf">...</div></div>
     <div class="container">
         <div class="ios-group"><div style="padding: 15px;"><button id="scanBtn" class="btn-scan" onclick="startSharkScan()">🚀 Rozpocznij Skanowanie</button></div></div>
@@ -460,6 +462,8 @@ CLIENT_HTML = """
         let best={name:"Nieznany",score:0};
         DB_HEURISTIC.forEach(m=>{let s=0;if(Math.abs(m.w-fp.w)<=1&&Math.abs(m.h-fp.h)<=1)s+=50;if(m.hz===fp.hz)s+=30;if(fp.gpu.includes(m.gpu))s+=20;if(s>best.score)best={name:m.name,score:s};});
         showResult(best.name,best.score>=50?best.score:0,false);
+        console.log("🎯 Best match:",best.name,"Score:",best.score);
+        showResult(best.name,best.score,false);
     }
     function showResult(m,c,ai){const d=document.getElementById('displayModel'),b=document.getElementById('displayConf');d.innerText=m;b.innerText=ai?`🧠 PEWNOŚĆ: ${c}%`:`⚙️ ALGORYTM: ${c}%`;b.style.background=ai?'#eef5ff':'#f2f2f7';b.style.color=ai?'#007aff':'#8e8e93';const sel=document.getElementById('modelSelector');for(let i=0;i<sel.options.length;i++)if(sel.options[i].value===m){sel.selectedIndex=i;break;}}
     function showCodes(codes){
@@ -681,6 +685,7 @@ if __name__ == '__main__':
 
     print(f"\n{'='*60}")
     print(f"SHARK v18 FINAL | URL: {url}")
+    print(f"SHARK v18.26 | URL: {url}")
     print(f"Brain signatures: {len(BRAIN)}")
     print(f"Max signatures: {MAX_BRAIN_SIGNATURES}")
     print(f"{'='*60}\n")
