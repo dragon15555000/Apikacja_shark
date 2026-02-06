@@ -9,9 +9,12 @@ import os
 import logging
 from io import StringIO
 
-# Dodaj katalog główny do ścieżki
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Dodaj katalog główny do ścieżki (dla uruchamiania z linii komend)
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
 
+# Importy - PyCharm może pokazywać ostrzeżenie, ale działa poprawnie w runtime
 from app.utils.logic import find_top_3_matches, normalize_viewport, normalize_gpu_string
 from app.models.heuristic_db import HEURISTIC_DB
 

@@ -6,9 +6,12 @@ Tests for core functionality: signature generation, device matching, etc.
 import sys
 import os
 
-# Add parent directory to path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+# Dodaj katalog główny do ścieżki (dla uruchamiania z linii komend)
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
 
+# Importy - PyCharm może pokazywać ostrzeżenie, ale działa poprawnie w runtime
 from app.utils.logic import build_signature, normalize_viewport, parse_device_from_ua
 
 
