@@ -1,10 +1,8 @@
 """
-SHARK v18 - Heuristic Database
-Baza heurystyczna - SPRAWDZONE PARAMETRY z rzeczywistych urządzeń
-Zawiera 47 modeli telefonów z dokładnymi parametrami ekranu
+SHARK v18 - Baza Heurystyczna
+Zawiera sprawdzone parametry dla rzeczywistych urządzeń.
 """
 
-# Baza heurystyczna - SPRAWDZONE PARAMETRY z rzeczywistych urządzeń
 HEURISTIC_DB = {
     # iPhone - SPRAWDZONE (z JSON) - iOS nie ma Display Zoom, więc tylko domyślne wartości
     "iPhone 16 Pro Max": {"w": 440, "h": 956, "hz": 120, "gpu": "apple gpu", "dpr": 3.0, "ram": -1},
