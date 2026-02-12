@@ -23,10 +23,7 @@ if os.path.exists('.env'):
                 os.environ[key.strip()] = value.strip()
     print("INFO: Environment variables loaded.")
 
-<<<<<<< Updated upstream
-=======
 # --- Krok 2: Import modułów aplikacji ---
->>>>>>> Stashed changes
 import sys
 from app.config import logger, VERSION, VERSION_NAME, HOST, PORT, DEBUG, USE_MONGODB, REDIS_URI, USE_REDIS
 from app.database import init_db_connection, load_data, save_brain_atomic, BRAIN, EXTERNAL_DB, detection_logs_collection
@@ -97,10 +94,7 @@ def version():
         "python": sys.version,
         "has_find_top_3_matches": has_find_top_3,
         "mongodb": USE_MONGODB,
-<<<<<<< Updated upstream
         "redis": USE_REDIS,
-=======
->>>>>>> Stashed changes
         "collections_initialized": detection_logs_collection is not None
     })
 
@@ -122,24 +116,13 @@ def check_brain():
         cores = d.get('cores', -1)
         user_agent = d.get('userAgent', '')
 
-<<<<<<< Updated upstream
-        # Normalizacja viewportu
-=======
         # Można dodać bardziej szczegółową walidację typów i zakresów, jeśli potrzeba
 
         # NORMALIZACJA VIEWPORT (zgodnie z wytycznymi)
         # Zaokraglaj szerokosc tylko jesli bardzo blisko calkowitej (blad renderowania <0.02px)
->>>>>>> Stashed changes
         exactWidth = round(width) if abs(width - round(width)) < 0.02 else width
         exactHeight = height
 
-<<<<<<< Updated upstream
-=======
-        # Pobierz dodatkowe flagi z JavaScript (jesli dostepne)
-        dprVerified = d.get('dprVerified', True)
-        isZoomed = d.get('isZoomed', False)
-
->>>>>>> Stashed changes
         gpu_str = gpu[:50] if gpu else "None"
         logger.info(f"SCAN PARAMS: W={width}, H={height}, DPR={dpr}, RAM={ram}, Hz={refresh_rate}, GPU={gpu_str}")
 
@@ -185,10 +168,6 @@ def check_brain():
             logger.info(f"SUCCESS: Device identified via UA_RAW: {ua_id}")
             detection_log["method"] = "UA_RAW"
             detection_log["matched_id"] = ua_id
-<<<<<<< Updated upstream
-=======
-
->>>>>>> Stashed changes
             if USE_MONGODB and detection_logs_collection is not None:
                 try:
                     detection_logs_collection.insert_one({
@@ -220,13 +199,6 @@ def check_brain():
             detection_log["ai_models"] = dict(models)
 
             if USE_MONGODB and detection_logs_collection is not None:
-<<<<<<< Updated upstream
-                detection_logs_collection.insert_one({
-                    "timestamp": datetime.utcnow(), "status": "SUCCESS_AI", "model": top_model,
-                    "confidence": confidence, "method": "AI", "fingerprint": f"{width}x{height} @ {dpr}x DPR",
-                    "gpu": gpu, "user_agent": user_agent[:200], "ai_models": dict(models)
-                })
-=======
                 try:
                     detection_logs_collection.insert_one({
                         "timestamp": datetime.utcnow(),
@@ -234,14 +206,13 @@ def check_brain():
                         "model": top_model,
                         "confidence": confidence,
                         "method": "AI",
-                        "fingerprint": f"{width}x{height} @ {dpr}x DPR, {refresh_rate}Hz, RAM: {ram}GB",
+                        "fingerprint": f"{width}x{height} @ {dpr}x DPR",
                         "gpu": gpu,
                         "user_agent": user_agent[:200],
                         "ai_models": dict(models)
                     })
                 except Exception as e:
                     logger.error(f"Error saving detection log: {e}")
->>>>>>> Stashed changes
 
             return jsonify({
                 "found": True, "model": top_model, "confidence": confidence, "source": "AI",
@@ -261,21 +232,14 @@ def check_brain():
                 second_confidence = suggestions[1]["confidence"] if len(suggestions) >= 2 else 0
 
                 if top_confidence >= 90 and second_confidence < 60:
-<<<<<<< Updated upstream
-                    model_name = suggestions[0]["model"]
-=======
                     # Pewność wystarczająco wysoka
                     model_name = suggestions[0]["model"]
                     # Usuń "(symulacja?)" z nazwy przy szukaniu kodów
->>>>>>> Stashed changes
                     clean_model_name = model_name.replace(" (symulacja?)", "")
                     accessory_codes = ACCESSORY_CODES.get(clean_model_name, {"screen": "N/A", "case": "N/A"})
                     logger.info(f"SUCCESS: Auto-decision made for {model_name} ({top_confidence}% vs {second_confidence}%)")
 
-<<<<<<< Updated upstream
-=======
                     # Zapisz log sukcesu
->>>>>>> Stashed changes
                     if USE_MONGODB and detection_logs_collection is not None:
                         detection_logs_collection.insert_one({
                             "timestamp": datetime.utcnow(), "status": "SUCCESS_AUTO", "model": model_name,
@@ -291,10 +255,6 @@ def check_brain():
 
             # Brak automatycznej decyzji - pokaż sugestie
             logger.info(f"FAILED: No exact match, suggesting top 3.")
-<<<<<<< Updated upstream
-=======
-
->>>>>>> Stashed changes
             if USE_MONGODB and detection_logs_collection is not None:
                 detection_logs_collection.insert_one({
                     "timestamp": datetime.utcnow(), "status": "FAILED",
@@ -396,22 +356,12 @@ def admin_clear_brain():
     try:
         global BRAIN
         BRAIN = {}
-<<<<<<< Updated upstream
-        # Zapisz pusty słownik do bazy
-        if USE_MONGODB and db:
-            db['brain'].update_one({'_id': 'brain_v18'}, {'$set': {'data': {}}}, upsert=True)
-        else:
-            save_brain_atomic(None, None) # To powinno wyczyścić plik
-=======
         save_brain_atomic(None, None) # To powinno wyczyścić
->>>>>>> Stashed changes
         logger.warning("ADMIN: Brain database cleared!")
         return jsonify({"status": "OK", "message": "Baza AI wyczyszczona!"})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-<<<<<<< Updated upstream
-=======
 @app.route('/admin/api/models/import-matomo', methods=['POST']) # Ta funkcja powinna być w osobnym skrypcie (np. setup_database.py)
 def admin_import_matomo_models():
     """API: Importuj modele z Matomo Device Detector do EXTERNAL_DB."""
@@ -599,19 +549,13 @@ def admin_delete_verified_model(system_name):
         logger.error(f"Error deleting verified model: {e}")
         return jsonify({"status": "ERROR", "error": str(e)}), 500
 
->>>>>>> Stashed changes
 @app.route('/admin/api/detection-logs', methods=['GET'])
 def admin_get_detection_logs():
     """API: Pobierz logi rozpoznań (sukces i porażka)."""
     try:
         if USE_MONGODB and detection_logs_collection is not None:
-<<<<<<< Updated upstream
             limit = int(request.args.get('limit', 200))
             logs = list(detection_logs_collection.find({}, {'_id': 0}).sort('timestamp', -1).limit(limit))
-=======
-            # Pobierz ostatnie 100 logów
-            logs = list(detection_logs_collection.find({}, {'_id': 0}).sort('timestamp', -1).limit(200))
->>>>>>> Stashed changes
 
             # Statystyki
             total_logs = detection_logs_collection.count_documents({})
@@ -645,8 +589,6 @@ def admin_clear_detection_logs():
         logger.error(f"Error clearing detection logs: {e}")
         return jsonify({"status": "ERROR", "error": str(e)}), 500
 
-<<<<<<< Updated upstream
-=======
 @app.route('/admin/api/sync-to-mongodb', methods=['POST'])
 def admin_sync_to_mongodb():
     """API: Synchronizuj wszystkie dane do MongoDB."""
@@ -732,7 +674,6 @@ def admin_sync_to_mongodb():
         logger.error(f"Error syncing to MongoDB: {e}")
         return jsonify({"status": "ERROR", "error": str(e)}), 500
 
->>>>>>> Stashed changes
 # --- Krok 5: Główna funkcja uruchomieniowa ---
 if __name__ == '__main__':
     logger.info(f"🚀 Starting SHARK {VERSION} - {VERSION_NAME}")
