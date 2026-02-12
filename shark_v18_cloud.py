@@ -98,184 +98,161 @@ def version():
         "collections_initialized": detection_logs_collection is not None
     })
 
+def _handle_ua_match(ua_id, detection_log):
+    """Obsługuje dopasowanie na podstawie User-Agent."""
+    model_name = EXTERNAL_DB.get(ua_id)
+    if model_name:
+        logger.info(f"SUCCESS: Device identified via UA_EXACT: {model_name}")
+        accessory_codes = ACCESSORY_CODES.get(model_name, {"screen": "N/A", "case": "N/A"})
+        detection_log.update({"method": "UA_EXACT", "matched_id": ua_id})
+
+        if USE_MONGODB and detection_logs_collection is not None:
+            try:
+                detection_logs_collection.insert_one({
+                    "timestamp": datetime.utcnow(), "status": "SUCCESS_UA", "model": model_name,
+                    "confidence": 100, "method": "UA_EXACT", "ua_id": ua_id,
+                    "fingerprint": detection_log["fingerprint"], "gpu": detection_log.get("gpu"), "user_agent": detection_log.get("ua_full")
+                })
+            except Exception as e:
+                logger.error(f"Error saving detection log: {e}")
+
+        return jsonify({
+            "found": True, "model": model_name, "confidence": 100, "source": "UA_EXACT",
+            "codes": accessory_codes, "detection_log": detection_log
+        })
+
+    # Priorytet 2: User-Agent wykryty, ale nie ma w bazie - zwróć surowy ID
+    logger.info(f"SUCCESS: Device identified via UA_RAW: {ua_id}")
+    detection_log.update({"method": "UA_RAW", "matched_id": ua_id})
+    if USE_MONGODB and detection_logs_collection is not None:
+        try:
+            detection_logs_collection.insert_one({
+                "timestamp": datetime.utcnow(), "status": "SUCCESS_UA_RAW", "model": ua_id,
+                "confidence": 90, "method": "UA_CODE", "ua_id": ua_id,
+                "fingerprint": detection_log["fingerprint"], "gpu": detection_log.get("gpu"), "user_agent": detection_log.get("ua_full")
+            })
+        except Exception as e:
+            logger.error(f"Error saving detection log: {e}")
+
+    return jsonify({
+        "found": True, "model": ua_id, "confidence": 90, "source": "UA_CODE",
+        "codes": {"screen": "N/A", "case": "N/A"}, "detection_log": detection_log
+    })
+
+def _handle_ai_brain_match(signature, detection_log):
+    """Obsługuje dopasowanie na podstawie AI Brain."""
+    if signature in BRAIN:
+        models = BRAIN[signature]
+        top_model = max(models, key=models.get)
+        total_count = sum(models.values())
+        confidence = int((models[top_model] / total_count) * 100)
+        logger.info(f"SUCCESS: Device identified via AI: {top_model} ({confidence}% confidence)")
+        accessory_codes = ACCESSORY_CODES.get(top_model, {"screen": "N/A", "case": "N/A"})
+        detection_log.update({"method": "AI", "signature": signature, "ai_models": dict(models)})
+
+        if USE_MONGODB and detection_logs_collection is not None:
+            try:
+                detection_logs_collection.insert_one({
+                    "timestamp": datetime.utcnow(), "status": "SUCCESS_AI", "model": top_model,
+                    "confidence": confidence, "method": "AI", "fingerprint": detection_log["fingerprint"],
+                    "gpu": detection_log.get("gpu"), "user_agent": detection_log.get("ua_full"), "ai_models": dict(models)
+                })
+            except Exception as e:
+                logger.error(f"Error saving detection log: {e}")
+
+        return jsonify({
+            "found": True, "model": top_model, "confidence": confidence, "source": "AI",
+            "codes": accessory_codes, "detection_log": detection_log
+        })
+    return None
+
+def _handle_heuristic_match(suggestions, detection_log):
+    """Obsługuje dopasowanie na podstawie heurystyki."""
+    if not suggestions:
+        return None
+
+    detection_log.update({"method": "HEURISTIC_TOP3", "suggestions": suggestions})
+
+    # AUTOMATYCZNA DECYZJA: Jeśli pierwszy model ma >=90% a drugi <60%, uznaj automatycznie
+    top_confidence = suggestions[0]["confidence"]
+    second_confidence = suggestions[1]["confidence"] if len(suggestions) >= 2 else 0
+
+    if top_confidence >= 90 and second_confidence < 60:
+        model_name = suggestions[0]["model"]
+        clean_model_name = model_name.replace(" (symulacja?)", "")
+        accessory_codes = ACCESSORY_CODES.get(clean_model_name, {"screen": "N/A", "case": "N/A"})
+        logger.info(f"SUCCESS: Auto-decision made for {model_name} ({top_confidence}% vs {second_confidence}%)")
+
+        if USE_MONGODB and detection_logs_collection is not None:
+            detection_logs_collection.insert_one({
+                "timestamp": datetime.utcnow(), "status": "SUCCESS_AUTO", "model": model_name,
+                "confidence": top_confidence, "method": "HEURISTIC_AUTO",
+                "fingerprint": detection_log["fingerprint"], "gpu": detection_log.get("gpu"), "user_agent": detection_log.get("ua_full")
+            })
+
+        return jsonify({
+            "found": True, "model": model_name, "confidence": top_confidence,
+            "source": "HEURISTIC_AUTO", "codes": accessory_codes,
+            "detection_log": detection_log, "auto_decision": True
+        })
+
+    # Brak automatycznej decyzji - pokaż sugestie
+    logger.info(f"FAILED: No exact match, suggesting top 3.")
+    if USE_MONGODB and detection_logs_collection is not None:
+        detection_logs_collection.insert_one({
+            "timestamp": datetime.utcnow(), "status": "FAILED",
+            "suggestions": [s["model"] for s in suggestions[:3]],
+            "top_confidence": suggestions[0]["confidence"] if suggestions else 0,
+            "method": "HEURISTIC_SUGGESTIONS", "fingerprint": detection_log["fingerprint"],
+            "gpu": detection_log.get("gpu"), "user_agent": detection_log.get("ua_full")
+        })
+
+    return jsonify({
+        "found": False, "suggestions": suggestions,
+        "codes": {"screen": "N/A", "case": "N/A"}, "detection_log": detection_log
+    })
+
 @app.route('/api/check_brain', methods=['POST'])
 @limiter.limit("30 per minute")
 @validate_json('w', 'h', 'hz', 'gpu', 'canvasHash', 'dpr', 'ram', 'cores')
 def check_brain():
     """Sprawdza fingerprint urządzenia w bazie danych."""
     try:
-        d = request.json
-        # Pobieranie i walidacja parametrów
-        width = d.get('w')
-        height = d.get('h')
-        refresh_rate = d.get('hz')
-        gpu = d.get('gpu')
-        canvas_hash = d.get('canvasHash')
-        dpr = d.get('dpr', 1.0)
-        ram = d.get('ram', -1)
-        cores = d.get('cores', -1)
-        user_agent = d.get('userAgent', '')
-
-        # Można dodać bardziej szczegółową walidację typów i zakresów, jeśli potrzeba
-
-        # NORMALIZACJA VIEWPORT (zgodnie z wytycznymi)
-        # Zaokraglaj szerokosc tylko jesli bardzo blisko calkowitej (blad renderowania <0.02px)
-        exactWidth = round(width) if abs(width - round(width)) < 0.02 else width
-        exactHeight = height
-
-        gpu_str = gpu[:50] if gpu else "None"
-        logger.info(f"SCAN PARAMS: W={width}, H={height}, DPR={dpr}, RAM={ram}, Hz={refresh_rate}, GPU={gpu_str}")
-
+        params = request.json
+        user_agent = params.get('userAgent', '')
         ua_id = parse_device_from_ua(user_agent)
-        logger.info(f"PARSED UA_ID: {ua_id}")
 
         detection_log = {
             "ua_detected": ua_id,
             "ua_full": user_agent[:100] + "..." if len(user_agent) > 100 else user_agent,
-            "fingerprint": f"{exactWidth}x{exactHeight} @ {dpr}x DPR, {refresh_rate}Hz, RAM: {ram}GB, Cores: {cores}, GPU: {gpu}",
-            "canvas_hash": canvas_hash,
-            "dpr": dpr,
-            "ram": ram,
-            "cores": cores
+            "fingerprint": f"{params.get('w')}x{params.get('h')} @ {params.get('dpr')}x DPR, {params.get('hz')}Hz, RAM: {params.get('ram')}GB, Cores: {params.get('cores')}, GPU: {params.get('gpu')}",
+            **params
         }
 
-        # Priorytet 1: User-Agent z dokładnym dopasowaniem w EXTERNAL_DB
+        # Strategia 1: Dopasowanie po User-Agent
         if ua_id:
-            model_name = EXTERNAL_DB.get(ua_id)
-            if model_name:
-                logger.info(f"SUCCESS: Device identified via UA_EXACT: {model_name}")
-                accessory_codes = ACCESSORY_CODES.get(model_name, {"screen": "N/A", "case": "N/A"})
-                detection_log["method"] = "UA_EXACT"
-                detection_log["matched_id"] = ua_id
+            return _handle_ua_match(ua_id, detection_log)
 
-                # Zapisz log do bazy
-                if USE_MONGODB and detection_logs_collection is not None:
-                    try:
-                        detection_logs_collection.insert_one({
-                            "timestamp": datetime.utcnow(), "status": "SUCCESS_UA", "model": model_name,
-                            "confidence": 100, "method": "UA_EXACT", "ua_id": ua_id,
-                            "fingerprint": f"{width}x{height} @ {dpr}x DPR", "gpu": gpu, "user_agent": user_agent[:200]
-                        })
-                    except Exception as e:
-                        logger.error(f"Error saving detection log: {e}")
+        # Strategia 2: Dopasowanie po AI Brain
+        dpr_rounded = round(float(params.get('dpr', 1.0)), 2)
+        signature = f"{params.get('w')}_{params.get('h')}_{dpr_rounded}_{params.get('ram', -1)}_{params.get('hz')}_{params.get('gpu')}_{params.get('canvasHash')}"
+        ai_match = _handle_ai_brain_match(signature, detection_log)
+        if ai_match:
+            return ai_match
 
-                return jsonify({
-                    "found": True, "model": model_name, "confidence": 100, "source": "UA_EXACT",
-                    "codes": accessory_codes, "detection_log": detection_log
-                })
-
-            # Priorytet 2: User-Agent wykryty, ale nie ma w bazie - zwróć surowy ID
-            logger.info(f"SUCCESS: Device identified via UA_RAW: {ua_id}")
-            detection_log["method"] = "UA_RAW"
-            detection_log["matched_id"] = ua_id
-            if USE_MONGODB and detection_logs_collection is not None:
-                try:
-                    detection_logs_collection.insert_one({
-                        "timestamp": datetime.utcnow(), "status": "SUCCESS_UA_RAW", "model": ua_id,
-                        "confidence": 90, "method": "UA_CODE", "ua_id": ua_id,
-                        "fingerprint": f"{width}x{height} @ {dpr}x DPR", "gpu": gpu, "user_agent": user_agent[:200]
-                    })
-                except Exception as e:
-                    logger.error(f"Error saving detection log: {e}")
-
-            return jsonify({
-                "found": True, "model": ua_id, "confidence": 90, "source": "UA_CODE",
-                "codes": {"screen": "N/A", "case": "N/A"}, "detection_log": detection_log
-            })
-
-        # Priorytet 3: Baza AI (fingerprint)
-        dpr_rounded = round(float(dpr), 2)
-        signature = f"{width}_{height}_{dpr_rounded}_{ram}_{refresh_rate}_{gpu}_{canvas_hash}"
-
-        if signature in BRAIN:
-            models = BRAIN[signature]
-            top_model = max(models, key=models.get)
-            total_count = sum(models.values())
-            confidence = int((models[top_model] / total_count) * 100)
-            logger.info(f"SUCCESS: Device identified via AI: {top_model} ({confidence}% confidence)")
-            accessory_codes = ACCESSORY_CODES.get(top_model, {"screen": "N/A", "case": "N/A"})
-            detection_log["method"] = "AI"
-            detection_log["signature"] = signature
-            detection_log["ai_models"] = dict(models)
-
-            if USE_MONGODB and detection_logs_collection is not None:
-                try:
-                    detection_logs_collection.insert_one({
-                        "timestamp": datetime.utcnow(),
-                        "status": "SUCCESS_AI",
-                        "model": top_model,
-                        "confidence": confidence,
-                        "method": "AI",
-                        "fingerprint": f"{width}x{height} @ {dpr}x DPR",
-                        "gpu": gpu,
-                        "user_agent": user_agent[:200],
-                        "ai_models": dict(models)
-                    })
-                except Exception as e:
-                    logger.error(f"Error saving detection log: {e}")
-
-            return jsonify({
-                "found": True, "model": top_model, "confidence": confidence, "source": "AI",
-                "codes": accessory_codes, "detection_log": detection_log
-            })
-
-        # Priorytet 4: Heurystyka - znajdź 3 najlepiej dopasowane modele
-        suggestions = find_top_3_matches(exactWidth, exactHeight, refresh_rate, gpu, dpr, ram, cores)
-
-        if suggestions:
-            detection_log["method"] = "HEURISTIC_TOP3"
-            detection_log["suggestions"] = suggestions
-
-            # AUTOMATYCZNA DECYZJA: Jeśli pierwszy model ma >=90% a drugi <60%, uznaj automatycznie
-            if len(suggestions) >= 1:
-                top_confidence = suggestions[0]["confidence"]
-                second_confidence = suggestions[1]["confidence"] if len(suggestions) >= 2 else 0
-
-                if top_confidence >= 90 and second_confidence < 60:
-                    # Pewność wystarczająco wysoka
-                    model_name = suggestions[0]["model"]
-                    # Usuń "(symulacja?)" z nazwy przy szukaniu kodów
-                    clean_model_name = model_name.replace(" (symulacja?)", "")
-                    accessory_codes = ACCESSORY_CODES.get(clean_model_name, {"screen": "N/A", "case": "N/A"})
-                    logger.info(f"SUCCESS: Auto-decision made for {model_name} ({top_confidence}% vs {second_confidence}%)")
-
-                    # Zapisz log sukcesu
-                    if USE_MONGODB and detection_logs_collection is not None:
-                        detection_logs_collection.insert_one({
-                            "timestamp": datetime.utcnow(), "status": "SUCCESS_AUTO", "model": model_name,
-                            "confidence": top_confidence, "method": "HEURISTIC_AUTO",
-                            "fingerprint": f"{width}x{height} @ {dpr}x DPR", "gpu": gpu, "user_agent": user_agent[:200]
-                        })
-
-                    return jsonify({
-                        "found": True, "model": model_name, "confidence": top_confidence,
-                        "source": "HEURISTIC_AUTO", "codes": accessory_codes,
-                        "detection_log": detection_log, "auto_decision": True
-                    })
-
-            # Brak automatycznej decyzji - pokaż sugestie
-            logger.info(f"FAILED: No exact match, suggesting top 3.")
-            if USE_MONGODB and detection_logs_collection is not None:
-                detection_logs_collection.insert_one({
-                    "timestamp": datetime.utcnow(), "status": "FAILED",
-                    "suggestions": [s["model"] for s in suggestions[:3]],
-                    "top_confidence": suggestions[0]["confidence"] if suggestions else 0,
-                    "method": "HEURISTIC_SUGGESTIONS", "fingerprint": f"{width}x{height} @ {dpr}x DPR",
-                    "gpu": gpu, "user_agent": user_agent[:200]
-                })
-
-            return jsonify({
-                "found": False, "suggestions": suggestions,
-                "codes": {"screen": "N/A", "case": "N/A"}, "detection_log": detection_log
-            })
+        # Strategia 3: Dopasowanie heurystyczne
+        exactWidth = round(params.get('w')) if abs(params.get('w') - round(params.get('w'))) < 0.02 else params.get('w')
+        suggestions = find_top_3_matches(exactWidth, params.get('h'), params.get('hz'), params.get('gpu'), params.get('dpr'), params.get('ram'), params.get('cores'))
+        heuristic_match = _handle_heuristic_match(suggestions, detection_log)
+        if heuristic_match:
+            return heuristic_match
 
         logger.warning("FAILED: Device not found in any database.")
-        detection_log["method"] = "NOT_FOUND"
-
+        detection_log.update({"method": "NOT_FOUND"})
         if USE_MONGODB and detection_logs_collection is not None:
             detection_logs_collection.insert_one({
                 "timestamp": datetime.utcnow(), "status": "FAILED_NO_MATCH", "method": "NOT_FOUND",
-                "fingerprint": f"{width}x{height} @ {dpr}x DPR", "gpu": gpu, "user_agent": user_agent[:200]
+                "fingerprint": detection_log["fingerprint"], "gpu": params.get('gpu'), "user_agent": user_agent[:200]
             })
 
         return jsonify({
@@ -283,7 +260,6 @@ def check_brain():
         })
 
     except Exception as e:
-        logger.error(f"Error in check_brain: {e}", exc_info=True)
         return jsonify({"error": "Internal server error"}), 500
 
 @app.route('/api/learn', methods=['POST'])
