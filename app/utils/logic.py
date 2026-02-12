@@ -282,3 +282,43 @@ def find_top_3_matches(width, height, refresh_rate, gpu, dpr, ram, cores, user_a
         )
 
     return matches[:3]
+
+
+def calculate_weighted_match(database, target_specs):
+    """
+    Oblicza dopasowanie modeli z bazy do wymagań użytkownika (Weighted Scoring).
+    Zwraca posortowaną listę wyników.
+    """
+    results = []
+
+    for device in database:
+        score = 0
+
+        # 1. Viewport (40 pkt)
+        if device.get('viewport') == target_specs.get('viewport'):
+            score += 40
+
+        # 2. DPR (30 pkt)
+        if device.get('dpr') == target_specs.get('dpr'):
+            score += 30
+
+        # 3. RAM (15 pkt) - premia za posiadanie wystarczającej ilości
+        # Używamy try/except na wypadek gdyby dane nie były liczbą
+        try:
+            if int(device.get('ram', 0)) >= int(target_specs.get('ram', 0)):
+                score += 15
+        except ValueError:
+            pass # Ignoruj błędy konwersji
+
+        # 4. Hz (15 pkt)
+        try:
+            if int(device.get('hz', 0)) >= int(target_specs.get('hz', 0)):
+                score += 15
+        except ValueError:
+            pass
+
+        # Dodajemy wynik do listy
+        results.append({"name": device['name'], "sys_name": device['sys_name'], "score": score, "details": device})
+
+    # Sortowanie: najwyższy wynik na górze
+    return sorted(results, key=lambda x: x['score'], reverse=True)
