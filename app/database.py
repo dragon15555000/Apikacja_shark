@@ -16,6 +16,9 @@ brain_collection = None
 detection_logs_collection = None
 external_db_collection = None
 verified_models_collection = None
+static_identifiers_collection = None
+android_identifiers_collection = None
+accessory_codes_collection = None
 
 # --- Globalne słowniki danych ---
 BRAIN = {}
@@ -24,7 +27,9 @@ EXTERNAL_DB = {}
 
 def init_db_connection():
     """Inicjalizuje połączenie z MongoDB, jeśli jest skonfigurowane."""
-    global db, brain_collection, detection_logs_collection, external_db_collection
+    global db, brain_collection, detection_logs_collection, external_db_collection, \
+        verified_models_collection, static_identifiers_collection, \
+        android_identifiers_collection, accessory_codes_collection
 
     if not USE_MONGODB:
         logger.info("💾 Using JSON file storage (MongoDB not configured).")
@@ -43,6 +48,9 @@ def init_db_connection():
         detection_logs_collection = db['detection_logs']
         external_db_collection = db['external_db']
         verified_models_collection = db['verified_models']
+        static_identifiers_collection = db['static_identifiers']
+        android_identifiers_collection = db['android_identifiers']
+        accessory_codes_collection = db['accessory_codes']
 
         logger.info("✅ MongoDB connected successfully.")
 
@@ -62,21 +70,29 @@ def load_data():
     global BRAIN, EXTERNAL_DB
 
     # 1. Ładowanie BRAIN
+    # UWAGA: używamy BRAIN.clear() + BRAIN.update() zamiast BRAIN = {}
+    # żeby referencje zaimportowane w shark_v18_cloud.py nadal działały z gunicornem
     try:
         if USE_MONGODB and brain_collection:
             brain_data = brain_collection.find_one({'_id': 'brain_v18'})
-            BRAIN = brain_data.get('data', {}) if brain_data else {}
+            loaded = brain_data.get('data', {}) if brain_data else {}
+            BRAIN.clear()
+            BRAIN.update(loaded)
             logger.info(f"🧠 Brain loaded from MongoDB: {len(BRAIN)} signatures")
         elif os.path.exists(BRAIN_FILE):
             with open(BRAIN_FILE, 'r', encoding='utf-8') as f:
-                BRAIN = json.load(f)
+                loaded = json.load(f)
+            BRAIN.clear()
+            BRAIN.update(loaded)
             logger.info(f"🧠 Brain loaded from file: {len(BRAIN)} signatures")
     except Exception as e:
         logger.error(f"Failed to load BRAIN data: {e}")
-        BRAIN = {}
+        BRAIN.clear()
 
     # 2. Ładowanie EXTERNAL_DB (identyfikatory urządzeń)
-    EXTERNAL_DB = {**STATIC_IDENTIFIERS, **ANDROID_IDENTIFIERS}
+    ext = {**STATIC_IDENTIFIERS, **ANDROID_IDENTIFIERS}
+    EXTERNAL_DB.clear()
+    EXTERNAL_DB.update(ext)
     logger.info(f"📱 Loaded {len(EXTERNAL_DB)} static device identifiers.")
 
     # Spróbuj załadować dodatkowe modele z bazy danych lub pliku
@@ -96,6 +112,7 @@ def load_data():
 
         if loaded_from:
             logger.info(f"📚 External DB (Matomo, etc.) loaded from {loaded_from}. Total models: {len(EXTERNAL_DB)}")
+
         else:
             logger.warning("⚠️ External DB not found. Run 'setup_database.py' to import more models.")
 
