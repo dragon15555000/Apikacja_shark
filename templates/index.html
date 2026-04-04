@@ -8,6 +8,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦈</text></svg>">
     <title>SHARK v18 Cloud</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         :root { --ios-bg: #F2F2F7; --ios-card: #FFF; --ios-blue: #007AFF; --ios-green: #34C759; --ios-text: #000; --ios-sub: #8E8E93; --ios-sep: #C6C6C8; }
         body { font-family: -apple-system, sans-serif; background: var(--ios-bg); margin: 0; padding: env(safe-area-inset-top) 0 20px 0; color: var(--ios-text); -webkit-font-smoothing: antialiased; }
@@ -32,10 +33,25 @@
         .code-desc { font-size: 13px; color: rgba(255,255,255,0.9); margin-top: 8px; }
         select { width: 100%; padding: 12px; border-radius: 10px; border: none; background: #E9E9EB; font-size: 16px; margin-bottom: 10px; color: var(--ios-blue); font-weight: 600; text-align: center; }
         .btn-fix { width: 100%; padding: 12px; background: transparent; color: var(--ios-green); border: none; font-weight: 600; font-size: 16px; }
+        .btn-qr { background: none; border: none; cursor: pointer; font-size: 22px; padding: 4px 8px; border-radius: 8px; }
+        .btn-qr:active { background: rgba(0,0,0,0.06); }
+        #qr-panel { position: absolute; right: 12px; top: 56px; background: white; border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.18); padding: 16px; z-index: 200; text-align: center; display: none; }
+        #qr-panel p { margin: 10px 0 0; font-size: 11px; color: var(--ios-sub); max-width: 200px; word-break: break-all; }
     </style>
 </head>
 <body>
-    <div class="header"><h1>SHARK v18 ☁️</h1><div class="status">ONLINE • CLOUD</div></div>
+    <div class="header" style="position:relative;">
+        <h1>SHARK v18 ☁️</h1>
+        <div style="display:flex;align-items:center;gap:8px;">
+            <div class="status">ONLINE • CLOUD</div>
+            <button class="btn-qr" onclick="toggleQR()" title="Pokaż QR kod">⬛</button>
+        </div>
+        <div id="qr-panel">
+            <div style="font-size:12px;color:var(--ios-sub);margin-bottom:8px;font-weight:600;">Skanuj aby otworzyć</div>
+            <div id="qr-code"></div>
+            <p id="qr-url"></p>
+        </div>
+    </div>
     <div id="result-hero"><div class="model-name" id="displayModel">...</div><div class="conf-badge" id="displayConf">...</div></div>
     <div class="container">
         <div class="ios-group"><div style="padding: 15px;"><button id="scanBtn" class="btn-scan" onclick="startSharkScan()">🚀 Rozpocznij Skanowanie</button></div></div>
@@ -86,16 +102,44 @@
         {name:"iPhone 11",w:414,h:896,hz:60,gpu:"apple gpu",dpr:2.0,ram:-1},
         {name:"iPhone 11 Pro",w:375,h:812,hz:60,gpu:"apple gpu",dpr:3.0,ram:-1},
         {name:"iPhone 11 Pro Max",w:414,h:896,hz:60,gpu:"apple gpu",dpr:3.0,ram:-1},
+        {name:"Samsung Galaxy S25 Ultra",w:384,h:824,hz:120,gpu:"adreno 830",dpr:3.75,ram:12},
+        {name:"Samsung Galaxy S25+",w:384,h:832,hz:120,gpu:"adreno 830",dpr:2.8125,ram:12},
+        {name:"Samsung Galaxy S25",w:360,h:780,hz:120,gpu:"adreno 830",dpr:3.0,ram:12},
         {name:"Samsung Galaxy S24 Ultra",w:384,h:824,hz:120,gpu:"adreno 750",dpr:3.75,ram:8},
         {name:"Samsung Galaxy S24 Plus",w:384,h:832,hz:120,gpu:"adreno 750",dpr:2.8125,ram:8},
         {name:"Samsung Galaxy S24",w:360,h:780,hz:120,gpu:"adreno 750",dpr:3.0,ram:8},
         {name:"Samsung Galaxy S23 Ultra",w:384,h:824,hz:120,gpu:"adreno 740",dpr:3.75,ram:8},
+        {name:"Samsung Galaxy A55",w:384,h:832,hz:120,gpu:"xclipse 530",dpr:2.8125,ram:8},
+        {name:"Samsung Galaxy A35",w:360,h:780,hz:120,gpu:"mali-g68",dpr:3.0,ram:6},
+        {name:"Google Pixel 9 Pro XL",w:448,h:998,hz:120,gpu:"mali-g715",dpr:3.0,ram:16},
+        {name:"Google Pixel 9 Pro",w:412,h:915,hz:120,gpu:"mali-g715",dpr:2.625,ram:16},
+        {name:"Google Pixel 9",w:412,h:915,hz:120,gpu:"mali-g715",dpr:2.625,ram:12},
         {name:"Google Pixel 8 Pro",w:448,h:998,hz:120,gpu:"mali-g715",dpr:3.0,ram:8},
+        {name:"Google Pixel 8",w:412,h:892,hz:120,gpu:"mali-g715",dpr:2.625,ram:8},
         {name:"Google Pixel 7 Pro",w:412,h:892,hz:120,gpu:"mali-g710",dpr:3.5,ram:8},
+        {name:"OnePlus 12",w:412,h:919,hz:120,gpu:"adreno 750",dpr:3.0,ram:12},
         {name:"Xiaomi 14 Pro",w:412,h:915,hz:120,gpu:"adreno 750",dpr:3.5,ram:8},
         {name:"Xiaomi 13 Ultra",w:412,h:915,hz:120,gpu:"adreno 740",dpr:3.5,ram:8}
     ];
     let currentScanData=null;
+    let qrGenerated=false;
+    function toggleQR(){
+        const panel=document.getElementById('qr-panel');
+        const isVisible=panel.style.display==='block';
+        panel.style.display=isVisible?'none':'block';
+        if(!isVisible&&!qrGenerated){
+            const url=window.location.origin+window.location.pathname;
+            new QRCode(document.getElementById('qr-code'),{text:url,width:200,height:200,colorDark:'#000000',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});
+            document.getElementById('qr-url').innerText=url;
+            qrGenerated=true;
+        }
+    }
+    // Zamknij panel QR po kliknięciu poza nim
+    document.addEventListener('click',function(e){
+        const panel=document.getElementById('qr-panel');
+        const btn=e.target.closest('.btn-qr');
+        if(!btn&&!panel.contains(e.target))panel.style.display='none';
+    });
     function getCanvasHash(){try{const c=document.createElement('canvas');const ctx=c.getContext('2d');c.width=200;c.height=50;ctx.textBaseline="top";ctx.font="14px Arial";ctx.fillStyle="#f60";ctx.fillRect(125,1,62,20);ctx.fillStyle="#069";ctx.fillText("SHARK_v18",2,15);const b64=c.toDataURL().replace("data:image/png;base64,","");let h=0;for(let i=0;i<b64.length;i++){h=((h<<5)-h)+b64.charCodeAt(i);h|=0;}return h.toString(16);}catch(e){return "error";}}
     function measureHz(){return new Promise(r=>{let f=0,s=performance.now();function l(){f++;if(performance.now()-s>=500)r(Math.round(f*2)<70?60:120);else requestAnimationFrame(l);}requestAnimationFrame(l);});}
     async function startSharkScan(){

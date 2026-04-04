@@ -22,27 +22,56 @@ def parse_device_from_ua(ua: str) -> str | None:
 
     try:
         # Wzorce Regex w kolejności od najbardziej specyficznych
-        patterns = {
-            "iPhone": r'iPhone(\d+,\d+)',
-            "iPad": r'iPad(\d+,\d+)',
-            "Samsung": r'(SM-[A-Z]\d{3}[A-Z]?)',
-            "Pixel": r'(Pixel \d+(?:\s+Pro)?)',
-            "OnePlus": r'((?:CPH|LE|IN|NE)\d{4})',
-            "Huawei": r'([A-Z]{3}-[A-Z0-9]{3,5})',
-            "Xiaomi": r'Build/([A-Z0-9]{10,})', # Mniej specyficzny, na końcu
-        }
+        # iPhone / iPad
+        m = re.search(r'iPhone(\d+,\d+)', ua)
+        if m:
+            return "iPhone" + m.group(1)
+        m = re.search(r'iPad(\d+,\d+)', ua)
+        if m:
+            return "iPad" + m.group(1)
 
-        for device_type, pattern in patterns.items():
-            match = re.search(pattern, ua)
-            if match:
-                # Dodatkowe warunki dla mniej jednoznacznych wzorców
-                if device_type == "Huawei" and not ('HUAWEI' in ua.upper() or 'HONOR' in ua.upper()):
-                    continue
-                if device_type == "Xiaomi" and 'Xiaomi' not in ua:
-                    continue
-                
-                # Zwróć dopasowany identyfikator
-                return f"{device_type}{match.group(1)}" if device_type in ["iPhone", "iPad"] else match.group(1)
+        # Samsung (SM-XXXX) — obsługuje 3 i 4-cyfrowe kody, usuwa sufiks regionu
+        m = re.search(r'(SM-[A-Z]\d{3,4}[A-Z]?)', ua)
+        if m:
+            code = m.group(1)
+            if len(code) > 7 and code[-1].isalpha():
+                code = code[:-1]  # Usuń literę regionu (np. SM-S938B → SM-S938)
+            return code[:8]
+
+        # Google Pixel — obsługuje: Pixel 9, Pixel 9a, Pixel 9 Pro, Pixel 9 Pro XL, Pixel 9 Pro Fold, Pixel 9 Fold, Pixel 8a
+        m = re.search(r'(Pixel \d+(?:a)?(?:\s+(?:Pro(?:\s+(?:XL|Fold))?|Fold|FE))?)', ua)
+        if m:
+            return m.group(1)
+
+        # OnePlus / Realme (CPH codes)
+        m = re.search(r'(CPH\d{4})', ua)
+        if m:
+            return m.group(1)
+
+        # OnePlus (LE/IN/NE codes)
+        m = re.search(r'((?:LE|IN|NE)\d{4})', ua)
+        if m:
+            return m.group(1)
+
+        # Realme (RMX codes)
+        m = re.search(r'(RMX\d{4})', ua)
+        if m:
+            return m.group(1)
+
+        # Huawei / Honor
+        m = re.search(r'([A-Z]{3}-[A-Z0-9]{3,5})', ua)
+        if m and ('HUAWEI' in ua.upper() or 'HONOR' in ua.upper()):
+            return m.group(1)
+
+        # Motorola (XT codes)
+        m = re.search(r'(XT\d{4})', ua)
+        if m:
+            return m.group(1)
+
+        # Xiaomi Build code
+        m = re.search(r'Build/([A-Z0-9]{10,})', ua)
+        if m and 'Xiaomi' in ua:
+            return m.group(1)[:12]
 
     except Exception as e:
         logger.error(f"Error parsing User-Agent: {e}")
@@ -50,7 +79,7 @@ def parse_device_from_ua(ua: str) -> str | None:
     return None
 
 
-def find_top_3_matches(width, height, refresh_rate, gpu, dpr, ram, cores):
+def find_top_3_matches(width, height, refresh_rate, gpu, dpr, ram, cores, user_agent=None):
     """
     Znajduje 3 najlepiej pasujące modele, używając ważonego algorytmu punktacji.
     """
@@ -58,7 +87,15 @@ def find_top_3_matches(width, height, refresh_rate, gpu, dpr, ram, cores):
     if not gpu: gpu = "" # Zabezpieczenie przed None
     gpu_lower = gpu.lower()
 
-    is_ios = "apple" in gpu_lower or ram == -1
+    # Wykryj OS na podstawie UA lub GPU
+    ua_lower = (user_agent or "").lower()
+    if "iphone" in ua_lower or "ipad" in ua_lower or "ios" in ua_lower or "apple" in gpu_lower:
+        is_ios = True
+    elif "android" in ua_lower:
+        is_ios = False
+    else:
+        is_ios = ram == -1  # fallback: iOS zwraca -1
+
     is_simulation = any(keyword in gpu_lower for keyword in ["intel", "nvidia", "amd", "angle", "swiftshader", "mesa"])
 
     if is_simulation:
@@ -82,7 +119,18 @@ def find_top_3_matches(width, height, refresh_rate, gpu, dpr, ram, cores):
         score = 0
         reasons = []
 
-        # Sprawdzanie 'None' przed porównaniem
+        # 1. GPU match (Android only, waga: 40)
+        if not is_ios and specs.get("gpu") and gpu_lower:
+            spec_gpu = specs["gpu"].lower()
+            spec_parts = [p for p in spec_gpu.split() if len(p) > 2]
+            if spec_parts and all(p in gpu_lower for p in spec_parts):
+                score += 40
+                reasons.append(f"GPU: {specs['gpu']}")
+            elif spec_gpu and spec_gpu in gpu_lower:
+                score += 40
+                reasons.append(f"GPU: {specs['gpu']}")
+
+        # 2. Viewport Width (waga: 50 iOS / 20 Android)
         if width is not None and specs.get("w") is not None:
             if specs["w"] == width:
                 score += 50 if is_ios else 20
@@ -91,6 +139,7 @@ def find_top_3_matches(width, height, refresh_rate, gpu, dpr, ram, cores):
                 score += 10
                 reasons.append(f"Width ~{specs['w']}px")
 
+        # 3. Viewport Height (waga: 30 iOS / 10 Android) z tolerancją paska adresu
         if height is not None and specs.get("h") is not None:
             if specs["h"] == height:
                 score += 30 if is_ios else 10
@@ -99,6 +148,7 @@ def find_top_3_matches(width, height, refresh_rate, gpu, dpr, ram, cores):
                 score += 25 if is_ios else 8
                 reasons.append(f"Height ~{specs['h']}px (address bar)")
 
+        # 4. DPR (waga: 20 iOS / 25 Android)
         if dpr is not None and specs.get("dpr") is not None:
             if abs(specs["dpr"] - dpr) < 0.1:
                 score += 20 if is_ios else 25
@@ -107,13 +157,15 @@ def find_top_3_matches(width, height, refresh_rate, gpu, dpr, ram, cores):
                 score += 10
                 reasons.append(f"DPR ~{specs['dpr']}x")
 
+        # 5. Hz (bonus/kara)
         if refresh_rate is not None and specs.get("hz") is not None:
             if abs(specs["hz"] - refresh_rate) < 5:
-                score += 5
+                score += 15 if is_ios else 5
                 reasons.append(f"Hz: {specs['hz']}Hz")
             else:
-                score -= 10
+                score -= 20 if is_ios else 10
 
+        # 6. RAM (Android only, waga: 5)
         if not is_ios and ram is not None and ram > 0 and specs.get("ram", -1) > 0:
             if ram >= specs["ram"] or abs(specs["ram"] - ram) <= 2:
                 score += 5
