@@ -72,4 +72,18 @@ ANDROID_IDENTIFIERS = {
     "RMX3771": "Realme 12 Pro+", "RMX3686": "Realme 11 Pro+", "RMX3581": "Realme 10 Pro+",
     # OPPO
     "CPH2551": "OPPO Find X6 Pro", "CPH2305": "OPPO Find X5 Pro",
+    # Sony Xperia
+    "XQ-EC54": "Sony Xperia 1 VI", "XQ-EC72": "Sony Xperia 1 VI",
+    "XQ-DE54": "Sony Xperia 1 V", "XQ-DE72": "Sony Xperia 1 V",
+    "XQ-CC54": "Sony Xperia 1 IV", "XQ-BC72": "Sony Xperia 1 III",
+    "XQ-BT52": "Sony Xperia 5 IV", "XQ-CT54": "Sony Xperia 10 VI",
+    # ASUS ROG Phone
+    "ASUS_AI2401": "ASUS ROG Phone 8", "ASUS_AI2401_C": "ASUS ROG Phone 8",
+    "ASUS_AI2301": "ASUS ROG Phone 7", "ASUS_AI2301_C": "ASUS ROG Phone 7",
+    # Nothing Phone
+    "A065": "Nothing Phone 2", "A063": "Nothing Phone 1",
+    "A075": "Nothing Phone 2a",
+    # Vivo / iQOO
+    "V2306A": "Vivo X100 Pro", "V2324A": "Vivo X100",
+    "V2307A": "iQOO 12",
 }

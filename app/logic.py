@@ -53,6 +53,28 @@ def parse_device_from_ua(ua: str) -> str | None:
         if m:
             return m.group(1)
 
+        # Sony Xperia (XQ-XXNN)
+        m = re.search(r'(XQ-[A-Z]{2}\d{2})', ua)
+        if m:
+            return m.group(1)
+
+        # ASUS ROG Phone (ASUS_XXXXXX)
+        m = re.search(r'(ASUS_[A-Z0-9]+)', ua)
+        if m:
+            return m.group(1)
+
+        # Nothing Phone (A063, A065, A075)
+        if 'nothing' in ua.lower():
+            m = re.search(r'\b(A06[359]|A07[5])\b', ua)
+            if m:
+                return m.group(1)
+
+        # Vivo / iQOO
+        if 'vivo' in ua.lower() or 'iqoo' in ua.lower():
+            m = re.search(r'\b(V\d{4}[A-Z])\b', ua)
+            if m:
+                return m.group(1)
+
         # Realme (RMX codes)
         m = re.search(r'(RMX\d{4})', ua)
         if m:
@@ -79,7 +101,7 @@ def parse_device_from_ua(ua: str) -> str | None:
     return None
 
 
-def find_top_3_matches(width, height, refresh_rate, gpu, dpr, ram, cores, user_agent=None):
+def find_top_3_matches(width, height, refresh_rate, gpu, dpr, ram, cores, user_agent=None, color_gamut=None):
     """
     Znajduje 3 najlepiej pasujące modele, używając ważonego algorytmu punktacji.
     """
@@ -170,6 +192,18 @@ def find_top_3_matches(width, height, refresh_rate, gpu, dpr, ram, cores, user_a
             if ram >= specs["ram"] or abs(specs["ram"] - ram) <= 2:
                 score += 5
                 reasons.append(f"RAM: ~{specs['ram']}GB")
+
+        # 7. Color Gamut (+15 match / -10 kara: flagowiec bez P3)
+        if color_gamut and specs.get("gamut"):
+            spec_gamut = specs["gamut"]
+            user_has_p3 = color_gamut in ("p3", "rec2020")
+            spec_needs_p3 = spec_gamut in ("p3", "rec2020")
+            if spec_needs_p3 and user_has_p3:
+                score += 15
+                reasons.append(f"Gamut: {spec_gamut}")
+            elif spec_needs_p3 and not user_has_p3:
+                score -= 10
+                reasons.append("Kara: brak P3 (flagowiec)")
 
         if score > 0:
             match_data = {

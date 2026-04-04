@@ -53,6 +53,7 @@ def register_api_routes(app, limiter):
                 return jsonify({"error": "Invalid cores value"}), 400
 
             user_agent = d.get('userAgent', '')
+            color_gamut = d.get('colorGamut')
 
             # NORMALIZACJA VIEWPORT
             exactWidth, exactHeight = normalize_viewport(width, height)
@@ -198,7 +199,8 @@ def register_api_routes(app, limiter):
                 dpr,
                 ram,
                 cores,
-                user_agent=user_agent
+                user_agent=user_agent,
+                color_gamut=color_gamut
             )
 
             if suggestions:
