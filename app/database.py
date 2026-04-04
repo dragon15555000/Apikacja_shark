@@ -15,6 +15,7 @@ db = None
 brain_collection = None
 detection_logs_collection = None
 external_db_collection = None
+verified_models_collection = None
 
 # --- Globalne słowniki danych ---
 BRAIN = {}
@@ -41,6 +42,7 @@ def init_db_connection():
         brain_collection = db['brain']
         detection_logs_collection = db['detection_logs']
         external_db_collection = db['external_db']
+        verified_models_collection = db['verified_models']
 
         logger.info("✅ MongoDB connected successfully.")
 
