@@ -79,13 +79,18 @@ def parse_device_from_ua(ua):
         if match_ipad:
             return "iPad" + match_ipad.group(1)
 
-        # Samsung (SM-XXXX)
-        match_samsung = re.search(r'(SM-[A-Z]\d{3}[A-Z]?)', ua)
+        # Samsung (SM-XXXX lub SM-XXXXX) - obsługuje modele z 3 lub 4 cyframi
+        match_samsung = re.search(r'(SM-[A-Z]\d{3,4}[A-Z]?)', ua)
         if match_samsung:
-            return match_samsung.group(1)[:7]
+            # Normalizuj do 7 znaków (SM-X123) lub 8 (SM-X1234) bez sufiksu regionu
+            code = match_samsung.group(1)
+            # Usuń trailing literę regionu (np. SM-S928B -> SM-S928)
+            if len(code) > 7 and code[-1].isalpha():
+                code = code[:-1]
+            return code[:8]
 
-        # Google Pixel
-        match_pixel = re.search(r'(Pixel \d+(?:\s+Pro)?)', ua)
+        # Google Pixel (obsługuje: Pixel 9, Pixel 8a, Pixel 9 Pro, Pixel 9 Pro XL, Pixel 9 Pro Fold, Pixel 9 Fold)
+        match_pixel = re.search(r'(Pixel \d+(?:a)?(?:\s+(?:Pro(?:\s+(?:XL|Fold))?|Fold|FE))?)', ua)
         if match_pixel:
             return match_pixel.group(1)
 
@@ -114,6 +119,24 @@ def parse_device_from_ua(ua):
             match_moto_name = re.search(r'(moto [a-z0-9 ]+|edge [a-z0-9 ]+|razr [a-z0-9 ]+)', ua.lower())
             if match_moto_name:
                 return match_moto_name.group(1).strip()
+
+        # Realme (RMX codes)
+        match_realme = re.search(r'(RMX\d{4})', ua)
+        if match_realme:
+            return match_realme.group(1)
+
+        # OPPO (CPH codes, obsługuje też OnePlus które już wyżej)
+        match_oppo = re.search(r'(CPH\d{4})', ua)
+        if match_oppo and 'OPPO' in ua.upper():
+            return match_oppo.group(1)
+
+        # Xiaomi - rozszerzony pattern (model name w UA)
+        if 'xiaomi' in ua.lower() or 'redmi' in ua.lower() or 'poco' in ua.lower():
+            match_xiaomi_name = re.search(r'(?:Xiaomi|Redmi|POCO)\s+([A-Za-z0-9 ]+?)(?:\s+Build|\s*\))', ua)
+            if match_xiaomi_name:
+                brand = 'Xiaomi' if 'xiaomi' in ua.lower() else ('Redmi' if 'redmi' in ua.lower() else 'POCO')
+                return f"{brand} {match_xiaomi_name.group(1).strip()}"
+
     except Exception as e:
         logger.error(f"Error parsing UA: {e}")
     return None
