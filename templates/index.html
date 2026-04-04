@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" id="metaViewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#F2F2F7">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -11,7 +11,13 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         :root { --ios-bg: #F2F2F7; --ios-card: #FFF; --ios-blue: #007AFF; --ios-green: #34C759; --ios-text: #000; --ios-sub: #8E8E93; --ios-sep: #C6C6C8; }
-        body { font-family: -apple-system, sans-serif; background: var(--ios-bg); margin: 0; padding: env(safe-area-inset-top) 0 20px 0; color: var(--ios-text); -webkit-font-smoothing: antialiased; }
+        body { font-family: -apple-system, sans-serif; background: var(--ios-bg); margin: 0; padding: env(safe-area-inset-top) 0 20px 0; color: var(--ios-text); -webkit-font-smoothing: antialiased; touch-action: manipulation; }
+        #landscape-overlay { display:none; position:fixed; top:0;left:0;right:0;bottom:0; background:rgba(0,0,0,0.92); z-index:9999; flex-direction:column; align-items:center; justify-content:center; color:white; text-align:center; padding:30px; }
+        #landscape-overlay.show { display:flex; }
+        #landscape-overlay .icon { font-size:64px; margin-bottom:20px; animation: rotate90 1s ease-in-out infinite alternate; }
+        @keyframes rotate90 { from{transform:rotate(0deg)} to{transform:rotate(-90deg)} }
+        #landscape-overlay h2 { font-size:24px; font-weight:700; margin:0 0 10px; }
+        #landscape-overlay p { font-size:15px; color:rgba(255,255,255,0.8); margin:0; }
         .header { background: rgba(242,242,247,0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); padding: 10px 20px; position: sticky; top: 0; z-index: 100; border-bottom: 0.5px solid rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; }
         .header h1 { margin: 0; font-size: 22px; font-weight: 700; }
         .header .status { font-size: 11px; font-weight: 600; color: var(--ios-green); background: rgba(52, 199, 89, 0.1); padding: 4px 8px; border-radius: 12px; }
@@ -40,6 +46,11 @@
     </style>
 </head>
 <body>
+    <div id="landscape-overlay">
+        <div class="icon">📱</div>
+        <h2>Obróć telefon pionowo</h2>
+        <p>SHARK mierzy rozdzielczość w trybie pionowym.<br>Obróć telefon i skanowanie wróci automatycznie.</p>
+    </div>
     <div class="header" style="position:relative;">
         <h1>SHARK v18 ☁️</h1>
         <div style="display:flex;align-items:center;gap:8px;">
@@ -86,6 +97,50 @@
         </div>
     </div>
 <script>
+    // ── Blokada zoom (pinch + double-tap) ────────────────────────────────────
+    document.addEventListener('touchstart', function(e){
+        if(e.touches.length > 1) e.preventDefault();
+    }, {passive:false});
+    (function(){
+        let lastTouch=0;
+        document.addEventListener('touchend', function(e){
+            const now=Date.now();
+            if(now-lastTouch<=300){ e.preventDefault(); }
+            lastTouch=now;
+        }, {passive:false});
+    })();
+
+    // ── Resetuj zoom do 100% przed skanowaniem ───────────────────────────────
+    function resetZoom(){
+        const mv=document.getElementById('metaViewport');
+        // trick: zmień i przywróć treść — wymusza reset zoomu w mobilnych przeglądarkach
+        mv.setAttribute('content','width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover');
+    }
+
+    // ── Detekcja orientacji poziomej ─────────────────────────────────────────
+    let scanPausedByLandscape=false;
+    function checkOrientation(){
+        const isLandscape = window.innerWidth > window.innerHeight;
+        const overlay=document.getElementById('landscape-overlay');
+        if(isLandscape){
+            overlay.classList.add('show');
+            scanPausedByLandscape=true;
+        } else {
+            overlay.classList.remove('show');
+            if(scanPausedByLandscape){
+                scanPausedByLandscape=false;
+                // Wróciło do pionu — auto-reskan jeśli był aktywny
+                if(document.getElementById('scanBtn').innerText==='Skanuj Ponownie'){
+                    setTimeout(startSharkScan, 400); // poczekaj aż viewport się ustabilizuje
+                }
+            }
+        }
+    }
+    window.addEventListener('orientationchange', function(){ setTimeout(checkOrientation, 350); });
+    window.addEventListener('resize', function(){ setTimeout(checkOrientation, 100); });
+    // Sprawdź przy starcie
+    setTimeout(checkOrientation, 100);
+
     const DB_HEURISTIC = [
         {name:"iPhone 16 Pro Max",w:440,h:956,hz:120,gpu:"apple gpu",dpr:3.0,ram:-1},
         {name:"iPhone 16 Pro",w:402,h:874,hz:120,gpu:"apple gpu",dpr:3.0,ram:-1},
@@ -141,14 +196,54 @@
         if(!btn&&!panel.contains(e.target))panel.style.display='none';
     });
     function getCanvasHash(){try{const c=document.createElement('canvas');const ctx=c.getContext('2d');c.width=200;c.height=50;ctx.textBaseline="top";ctx.font="14px Arial";ctx.fillStyle="#f60";ctx.fillRect(125,1,62,20);ctx.fillStyle="#069";ctx.fillText("SHARK_v18",2,15);const b64=c.toDataURL().replace("data:image/png;base64,","");let h=0;for(let i=0;i<b64.length;i++){h=((h<<5)-h)+b64.charCodeAt(i);h|=0;}return h.toString(16);}catch(e){return "error";}}
-    function measureHz(){return new Promise(r=>{let f=0,s=performance.now();function l(){f++;if(performance.now()-s>=500)r(Math.round(f*2)<70?60:120);else requestAnimationFrame(l);}requestAnimationFrame(l);});}
-    async function startSharkScan(){
-        const btn=document.getElementById('scanBtn');btn.disabled=true;btn.innerText="...";document.getElementById('result-hero').style.display='block';
-        const gc=document.createElement('canvas'),gl=gc.getContext('webgl'),di=gl?gl.getExtension('WEBGL_debug_renderer_info'):null;
-        let gpu=di?gl.getParameter(di.UNMASKED_RENDERER_WEBGL):"unknown";if(gpu.includes("Apple"))gpu=gpu.replace("Apple ","").replace(" GPU","").trim();
+    function measureHz(){return new Promise(r=>{let f=0,s=performance.now();function l(){f++;if(performance.now()-s>=600)r(f*1.67<70?60:(f*1.67<100?90:120));else requestAnimationFrame(l);}requestAnimationFrame(l);});}
 
-        // ✅ PRECYZYJNE POMIARY VIEWPORT (getBoundingClientRect zamiast window.innerWidth)
-        const layoutWidth = document.documentElement.getBoundingClientRect().width;
+    // Pobierz GPU — próbuje webgl2 → webgl → experimental-webgl (Firefox/Samsung Browser)
+    function getGPU(){
+        const ctxNames=['webgl2','webgl','experimental-webgl'];
+        for(const name of ctxNames){
+            try{
+                const c=document.createElement('canvas');
+                const gl=c.getContext(name);
+                if(!gl) continue;
+                const ext=gl.getExtension('WEBGL_debug_renderer_info');
+                if(ext){
+                    const r=gl.getParameter(ext.UNMASKED_RENDERER_WEBGL);
+                    if(r&&r!=='unknown'&&r.length>2) return r;
+                }
+                // Fallback: RENDERER bez rozszerzenia (Firefox z privacy.resistFingerprinting=false)
+                const r2=gl.getParameter(gl.RENDERER);
+                if(r2&&r2!=='unknown'&&r2.length>2) return r2;
+            }catch(e){}
+        }
+        return "unknown";
+    }
+
+    async function startSharkScan(){
+        // Zablokuj skanowanie w orientacji poziomej
+        if(window.innerWidth > window.innerHeight){
+            checkOrientation();
+            return;
+        }
+
+        // Resetuj zoom do 100% przed pomiarem
+        resetZoom();
+        // Poczekaj 100ms na ustabilizowanie viewportu po resecie zoom
+        await new Promise(r=>setTimeout(r,100));
+
+        const btn=document.getElementById('scanBtn');btn.disabled=true;btn.innerText="...";document.getElementById('result-hero').style.display='block';
+        let gpu=getGPU();
+        if(gpu.includes("Apple"))gpu=gpu.replace("Apple ","").replace(" GPU","").trim();
+
+        // ✅ PRECYZYJNE POMIARY VIEWPORT — stabilne po reset zoom
+        // Podwójny odczyt z krótkimi przerwami: bierz medianę (odporność na fluktuacje w Chrome/Safari)
+        const reads=[];
+        for(let i=0;i<3;i++){
+            reads.push(document.documentElement.getBoundingClientRect().width);
+            if(i<2) await new Promise(r=>setTimeout(r,30));
+        }
+        reads.sort((a,b)=>a-b);
+        const layoutWidth = reads[1]; // mediana
         const layoutHeight = window.innerHeight; // Dynamiczna wysokość (pasek adresu)
 
         // Normalizacja: zaokrąglaj tylko jeśli bardzo blisko całkowitej (błąd renderowania <0.02px)
