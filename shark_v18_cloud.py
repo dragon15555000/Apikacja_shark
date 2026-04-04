@@ -26,7 +26,13 @@ if os.path.exists('.env'):
 # --- Krok 2: Import modułów aplikacji ---
 import sys
 from app.config import logger, VERSION, VERSION_NAME, HOST, PORT, DEBUG, USE_MONGODB, REDIS_URI, USE_REDIS
-from app.database import init_db_connection, load_data, save_brain_atomic, BRAIN, EXTERNAL_DB, detection_logs_collection
+from app.database import (
+    init_db_connection, load_data, save_brain_atomic,
+    BRAIN, EXTERNAL_DB,
+    detection_logs_collection, brain_collection, external_db_collection,
+    verified_models_collection, static_identifiers_collection,
+    android_identifiers_collection, accessory_codes_collection,
+)
 from app.logic import parse_device_from_ua, find_top_3_matches
 from app.models.accessory_codes import ACCESSORY_CODES
 
@@ -577,67 +583,32 @@ def admin_sync_to_mongodb():
                 "help": "Lokalnie: ustaw zmienne w pliku .env lub systemowo. Na Render: zmienne są już ustawione."
             }), 500
 
+        # Pobierz kolekcje przez moduł (nie przez stare referencje z importu)
+        import app.database as db_module
+        from app.models.identifiers import STATIC_IDENTIFIERS, ANDROID_IDENTIFIERS
+
+        if db_module.db is None:
+            return jsonify({"status": "ERROR", "error": "Brak połączenia z MongoDB"}), 500
+
         results = {}
 
-        # 1. Synchronizuj STATIC_IDENTIFIERS
-        try:
-            static_identifiers_collection.update_one(
-                {'_id': 'static_identifiers'},
-                {'$set': {'data': STATIC_IDENTIFIERS, 'updated_at': datetime.utcnow()}},
-                upsert=True
-            )
-            results['static_identifiers'] = len(STATIC_IDENTIFIERS)
-            logger.info(f"Static Identifiers synced: {len(STATIC_IDENTIFIERS)} models")
-        except Exception as e:
-            results['static_identifiers'] = f"ERROR: {e}"
+        def sync_collection(coll_name, doc_id, data):
+            try:
+                coll = db_module.db[coll_name]
+                coll.update_one(
+                    {'_id': doc_id},
+                    {'$set': {'data': data, 'updated_at': datetime.utcnow()}},
+                    upsert=True
+                )
+                return len(data)
+            except Exception as e:
+                return f"ERROR: {e}"
 
-        # 2. Synchronizuj ANDROID_IDENTIFIERS
-        try:
-            android_identifiers_collection.update_one(
-                {'_id': 'android_identifiers'},
-                {'$set': {'data': ANDROID_IDENTIFIERS, 'updated_at': datetime.utcnow()}},
-                upsert=True
-            )
-            results['android_identifiers'] = len(ANDROID_IDENTIFIERS)
-            logger.info(f"Android Identifiers synced: {len(ANDROID_IDENTIFIERS)} models")
-        except Exception as e:
-            results['android_identifiers'] = f"ERROR: {e}"
-
-        # 3. Synchronizuj ACCESSORY_CODES
-        try:
-            accessory_codes_collection.update_one(
-                {'_id': 'accessory_codes'},
-                {'$set': {'data': ACCESSORY_CODES, 'updated_at': datetime.utcnow()}},
-                upsert=True
-            )
-            results['accessory_codes'] = len(ACCESSORY_CODES)
-            logger.info(f"Accessory Codes synced: {len(ACCESSORY_CODES)} models")
-        except Exception as e:
-            results['accessory_codes'] = f"ERROR: {e}"
-
-        # 4. Synchronizuj EXTERNAL_DB (Matomo)
-        try:
-            external_db_collection.update_one(
-                {'_id': 'external_db'},
-                {'$set': {'data': EXTERNAL_DB, 'updated_at': datetime.utcnow()}},
-                upsert=True
-            )
-            results['external_db'] = len(EXTERNAL_DB)
-            logger.info(f"External DB synced: {len(EXTERNAL_DB)} models")
-        except Exception as e:
-            results['external_db'] = f"ERROR: {e}"
-
-        # 5. Synchronizuj BRAIN (już istnieje, ale dla pewności)
-        try:
-            brain_collection.update_one(
-                {'_id': 'brain_v18'},
-                {'$set': {'data': BRAIN, 'updated_at': datetime.utcnow()}},
-                upsert=True
-            )
-            results['brain'] = len(BRAIN)
-            logger.info(f"Brain synced: {len(BRAIN)} signatures")
-        except Exception as e:
-            results['brain'] = f"ERROR: {e}"
+        results['static_identifiers']  = sync_collection('static_identifiers',  'static_identifiers',  STATIC_IDENTIFIERS)
+        results['android_identifiers'] = sync_collection('android_identifiers', 'android_identifiers', ANDROID_IDENTIFIERS)
+        results['accessory_codes']     = sync_collection('accessory_codes',     'accessory_codes',     ACCESSORY_CODES)
+        results['external_db']         = sync_collection('external_db',         'external_db',         EXTERNAL_DB)
+        results['brain']               = sync_collection('brain', 'brain_v18', {'data': BRAIN})
 
         logger.warning(f"ADMIN: All data synced to MongoDB!")
         return jsonify({
@@ -650,11 +621,23 @@ def admin_sync_to_mongodb():
         logger.error(f"Error syncing to MongoDB: {e}")
         return jsonify({"status": "ERROR", "error": str(e)}), 500
 
-# --- Krok 5: Główna funkcja uruchomieniowa ---
+# --- Krok 5: Inicjalizacja bazy danych (gunicorn + bezpośrednie uruchomienie) ---
+# WAŻNE: musi być poza if __name__ == '__main__' żeby działało z gunicornem
+logger.info(f"🚀 Starting SHARK {VERSION} - {VERSION_NAME}")
+init_db_connection()
+load_data()
+
+# Odśwież referencje do kolekcji MongoDB po inicjalizacji
+# (from module import var daje None w momencie importu — gunicorn nie odpala __main__)
+import app.database as _db
+detection_logs_collection   = _db.detection_logs_collection
+brain_collection            = _db.brain_collection
+external_db_collection      = _db.external_db_collection
+verified_models_collection  = _db.verified_models_collection
+
+logger.info(f"🧠 Brain: {len(BRAIN)} sygnatur | DB: {len(EXTERNAL_DB)} identyfikatorów | MongoDB: {'✅' if _db.db else '❌'}")
+
 if __name__ == '__main__':
-    logger.info(f"🚀 Starting SHARK {VERSION} - {VERSION_NAME}")
-    init_db_connection()
-    load_data()
 
     print(f"\n{'='*60}")
     print(f"SHARK v18 Server is running!")
