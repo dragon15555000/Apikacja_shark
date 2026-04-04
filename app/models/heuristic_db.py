@@ -26,10 +26,10 @@ HEURISTIC_DB = {
     "Samsung Galaxy S24 Ultra (Zoom -1)": {"w": 411, "h": 882, "hz": 120, "gpu": "adreno 750", "dpr": 3.5, "ram": 8},
     "Samsung Galaxy S24 Ultra (Zoom +1)": {"w": 360, "h": 772, "hz": 120, "gpu": "adreno 750", "dpr": 4.0, "ram": 8},
 
-    # Samsung S24 Plus - DOMYŚLNY + Display Zoom variants
-    "Samsung Galaxy S24 Plus": {"w": 384, "h": 832, "hz": 120, "gpu": "adreno 750", "dpr": 2.8125, "ram": 8},
-    "Samsung Galaxy S24 Plus (Zoom -1)": {"w": 411, "h": 891, "hz": 120, "gpu": "adreno 750", "dpr": 2.625, "ram": 8},
-    "Samsung Galaxy S24 Plus (Zoom +1)": {"w": 360, "h": 780, "hz": 120, "gpu": "adreno 750", "dpr": 3.0, "ram": 8},
+    # Samsung S24+ - DOMYŚLNY + Display Zoom variants
+    "Samsung Galaxy S24+": {"w": 384, "h": 832, "hz": 120, "gpu": "adreno 750", "dpr": 2.8125, "ram": 8},
+    "Samsung Galaxy S24+ (Zoom -1)": {"w": 411, "h": 891, "hz": 120, "gpu": "adreno 750", "dpr": 2.625, "ram": 8},
+    "Samsung Galaxy S24+ (Zoom +1)": {"w": 360, "h": 780, "hz": 120, "gpu": "adreno 750", "dpr": 3.0, "ram": 8},
 
     # Samsung S24 - DOMYŚLNY + Display Zoom variants
     "Samsung Galaxy S24": {"w": 360, "h": 780, "hz": 120, "gpu": "adreno 750", "dpr": 3.0, "ram": 8},
