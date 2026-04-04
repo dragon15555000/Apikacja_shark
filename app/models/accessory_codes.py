@@ -123,4 +123,24 @@ ACCESSORY_CODES = {
     # OPPO
     "OPPO Find X6 Pro": {"screen": "OP_X1U1", "case": "OP_X1U2"},
     "OPPO Find X5 Pro": {"screen": "OP_X2U1", "case": "OP_X2U2"},
+    # Samsung Galaxy S24 FE
+    "Samsung Galaxy S24 FE": {"screen": "SF4U1", "case": "SF4U2"},
+    # Sony Xperia
+    "Sony Xperia 1 VI": {"screen": "SX1U1", "case": "SX1U2"},
+    "Sony Xperia 1 V": {"screen": "SX2U1", "case": "SX2U2"},
+    "Sony Xperia 1 IV": {"screen": "SX3U1", "case": "SX3U2"},
+    "Sony Xperia 1 III": {"screen": "SX4U1", "case": "SX4U2"},
+    "Sony Xperia 5 IV": {"screen": "SX5U1", "case": "SX5U2"},
+    "Sony Xperia 10 VI": {"screen": "SX6U1", "case": "SX6U2"},
+    # ASUS ROG Phone
+    "ASUS ROG Phone 8": {"screen": "AR8U1", "case": "AR8U2"},
+    "ASUS ROG Phone 7": {"screen": "AR7U1", "case": "AR7U2"},
+    # Nothing Phone
+    "Nothing Phone 2": {"screen": "NP2U1", "case": "NP2U2"},
+    "Nothing Phone 2a": {"screen": "NP3U1", "case": "NP3U2"},
+    "Nothing Phone 1": {"screen": "NP1U1", "case": "NP1U2"},
+    # Vivo / iQOO
+    "Vivo X100 Pro": {"screen": "VV1U1", "case": "VV1U2"},
+    "Vivo X100": {"screen": "VV2U1", "case": "VV2U2"},
+    "iQOO 12": {"screen": "IQ1U1", "case": "IQ1U2"},
 }

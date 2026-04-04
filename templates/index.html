@@ -258,6 +258,21 @@
         const ram=navigator.deviceMemory||-1;
         const cores=navigator.hardwareConcurrency||-1;
 
+        // 🎨 Color Gamut - rozróżnia flagowce (Display P3) od budżetowych (sRGB)
+        const colorGamut = window.matchMedia('(color-gamut: rec2020)').matches ? 'rec2020' :
+                           window.matchMedia('(color-gamut: p3)').matches ? 'p3' : 'srgb';
+
+        // 🔷 GPU Vendor (UNMASKED_VENDOR_WEBGL) - Apple/Qualcomm/ARM/Imagination
+        let gpuVendor = '';
+        try {
+            const _vc = document.createElement('canvas');
+            const _vg = _vc.getContext('webgl2') || _vc.getContext('webgl');
+            if (_vg) {
+                const _ve = _vg.getExtension('WEBGL_debug_renderer_info');
+                if (_ve) gpuVendor = (_vg.getParameter(_ve.UNMASKED_VENDOR_WEBGL) || '').toLowerCase();
+            }
+        } catch(e) {}
+
         // Dodatkowe flagi diagnostyczne
         const isZoomed = dpr !== Math.round(dpr); // Flaga: czy DPR jest ułamkowe (Display Zoom?)
 
@@ -292,7 +307,9 @@
             dprVerified:dprVerified,
             isZoomed:isZoomed,
             ram:ram,
-            cores:cores
+            cores:cores,
+            colorGamut:colorGamut,
+            gpuVendor:gpuVendor
         };
         currentScanData=data;
 

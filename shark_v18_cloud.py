@@ -248,7 +248,7 @@ def check_brain():
 
         # Strategia 3: Dopasowanie heurystyczne
         exactWidth = round(params.get('w')) if abs(params.get('w') - round(params.get('w'))) < 0.02 else params.get('w')
-        suggestions = find_top_3_matches(exactWidth, params.get('h'), params.get('hz'), params.get('gpu'), params.get('dpr'), params.get('ram'), params.get('cores'))
+        suggestions = find_top_3_matches(exactWidth, params.get('h'), params.get('hz'), params.get('gpu'), params.get('dpr'), params.get('ram'), params.get('cores'), color_gamut=params.get('colorGamut'))
         heuristic_match = _handle_heuristic_match(suggestions, detection_log)
         if heuristic_match:
             return heuristic_match
