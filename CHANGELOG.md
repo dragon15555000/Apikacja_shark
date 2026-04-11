@@ -1,5 +1,56 @@
 # 📝 SHARK - Historia Zmian
 
+## [v18.33] - 2026-04-11
+
+### Zmienione
+- Refaktoryzacja struktury dokumentacji – zbędne pliki przeniesione do `_archiwum/`
+- Poprawiono wersję w `app/__init__.py` (zsynchronizowano z `app/config.py`)
+- Przepisano `README.md` i `INSTALACJA.md` dla większej czytelności
+
+---
+
+## [v18.32] - 2026-02-06
+
+### Dodane
+- Zaawansowane testy jednostkowe (`tests/test_logic_advanced.py`, `tests/test_logic_simple.py`)
+
+### Poprawione
+- Obsługa parametrów `None` w algorytmie scoringu
+- Ostrzeżenia PyCharm dotyczące importów
+
+---
+
+## [v18.26] - 2026-01-xx
+
+### Poprawione
+- Wyświetlanie rzeczywistego score algorytmu heurystycznego (zamiast 0% dla niskich wyników)
+
+---
+
+## [v18.25] - 2026-01-xx
+
+### Poprawione
+- Krytyczny błąd współbieżności przy zapisie BRAIN w środowiskach wieloprocesowych
+- Implementacja atomicznych operacji MongoDB (`$set`) – bezpieczne dla gunicorn multi-worker
+
+---
+
+## [v18.24] - 2026-01-xx
+
+### Dodane
+- Przyciski „Dodaj" przy sugestiach AI w interfejsie
+- Pole ręcznego wpisania modelu widoczne tylko przy niskiej pewności wszystkich sugestii
+
+---
+
+## [v18.23] - 2026-01-31
+
+### Zmienione
+- Refaktoryzacja monolitu `shark_v18_cloud.py` (1298 linii) do modularnej struktury `app/`
+- Wydzielono: `models/`, `routes/`, `utils/`, `config.py`, `database.py`
+
+---
+
 ## [v18] - 2025-01-15
 
 ### 🎉 Główne Zmiany
