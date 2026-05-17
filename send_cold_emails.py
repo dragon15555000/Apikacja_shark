@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import os
+import sys
 import smtplib
 import logging
 from email.message import EmailMessage
@@ -12,7 +13,7 @@ def main():
 
     if not sender or not pwd:
         logging.error("Przerwano. Brak zmiennych środowiskowych SMTP_USER lub SMTP_PASS.")
-        return
+        sys.exit(1)
 
     targets = [
         {"company": "Ekoenergetyka", "email": "test-eko@example.com"},
@@ -42,16 +43,19 @@ Gorzów Wielkopolski
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
             server.login(sender, pwd)
             for target in targets:
-                msg = EmailMessage()
-                msg.set_content(body_template.format(company=target["company"]))
-                msg["Subject"] = subject
-                msg["From"] = sender
-                msg["To"] = target["email"]
+                try:
+                    msg = EmailMessage()
+                    msg.set_content(body_template.format(company=target["company"]))
+                    msg["Subject"] = subject
+                    msg["From"] = sender
+                    msg["To"] = target["email"]
 
-                # Odkomentuj poniższą linię, gdy dodasz załącznik i poprawne maile
-                # server.send_message(msg)
+                    # Odkomentuj poniższą linię, gdy dodasz załącznik i poprawne maile
+                    # server.send_message(msg)
 
-                logging.info(f"Pomyślnie wygenerowano szkic wiadomości dla: {target['company']} -> {target['email']}")
+                    logging.info(f"Pomyślnie wygenerowano szkic wiadomości dla: {target['company']} -> {target['email']}")
+                except Exception as e:
+                    logging.error(f"Błąd podczas przetwarzania {target['company']} ({target['email']}): {e}")
 
     except smtplib.SMTPAuthenticationError:
         logging.error("Błąd uwierzytelniania SMTP. Sprawdź hasło aplikacji.")
