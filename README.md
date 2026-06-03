@@ -1,50 +1,32 @@
 # SHARK v18
 
-System do rozpoznawania urządzeń mobilnych przez fingerprinting przeglądarki. Na wejściu: rozdzielczość, DPR, GPU, częstotliwość odświeżania, User-Agent. Na wyjściu: model telefonu + kody magazynowe akcesoriów (szkło ochronne, etui).
+```http
+POST /api/check_brain
+Content-Type: application/json
 
-*Mobile device identification via browser fingerprinting. Input: resolution, DPR, GPU, refresh rate, User-Agent. Output: device model + warehouse accessory codes (screen protector, case).*
+{"w":390,"h":844,"hz":60,"dpr":3,"gpu":"Apple GPU","userAgent":"Mozilla/5.0 (iPhone; ...)"}
+```
 
----
+Odpowiedź: model telefonu, pewność, źródło trafienia (`UA_EXACT`, `BRAIN`, `HEURISTIC`, …), kody szkła i etui z magazynu.
 
-Detekcja działa w czterech warstwach. Pierwsza to parsowanie User-Agent — jeśli UA zawiera znany identyfikator (np. `iPhone17,1` albo `SM-S928B`), odpowiedź jest natychmiastowa z 100% pewnością. Jeśli UA nie wystarczy, system sięga do BRAIN — słownika nauczonych sygnatur sprzętowych. Jeśli i tam nie ma trafienia, uruchamia się scoring heurystyczny: każdy model z bazy dostaje punkty za dopasowanie rozdzielczości, DPR, GPU i Hz. Wynik automatyczny jeśli lider ma ≥ 90 punktów i drugi kandydat < 60.
+Sklep potrzebował rozpoznać urządzenie klienta w przeglądarce (bez instalacji apki) i od razu podać właściwe kody akcesoriów. Stąd ten serwis — fingerprint z ekranu, GPU, Hz, DPR i User-Agent.
 
-BRAIN przechowuje do 10 000 sygnatur, max 5 modeli na sygnaturę, eksmisja LFU. Zapis przez MongoDB `$set` albo `.tmp` + `os.replace` — bezpieczne przy gunicorn multi-worker.
+Kolejność prób: najpierw UA (np. `iPhone17,1`, `SM-S928B`) — jeśli pasuje, koniec, 100%. Potem słownik BRAIN (nauczone sygnatury, do 10k wpisów, max 5 modeli na sygnaturę, LFU przy przepełnieniu). Na końcu heurystyka punktowa po rozdzielczości / DPR / GPU; auto-wybór gdy lider ≥ 90 pkt i drugi < 60.
 
----
+Zapis: MongoDB `$set` w produkcji, albo plik JSON + `.tmp` + `os.replace` lokalnie — żeby gunicorn z wieloma workerami nie rozwalił pliku w połowie zapisu.
 
-## Obsługiwane urządzenia
+iPhone 11–17 (27 modeli), Samsung S/A/Z, Pixel 5–8 Pro, Xiaomi, OnePlus, Huawei — łącznie 50+ Androidów w bazie.
 
-iPhone 11–17 Pro Max (27 modeli), Samsung Galaxy S/A/Z, Google Pixel 5–8 Pro, Xiaomi Mi 10T–14 Pro, OnePlus 8–12, Huawei P30–P40. Łącznie 50+ modeli Android.
-
----
-
-## Stack
-
-Python 3.13, Flask 3.1, MongoDB Atlas (pymongo) z fallbackiem na plik JSON, gunicorn, flask-limiter (opcjonalnie Redis dla multi-worker). Testy: pytest + pytest-mock.
-
----
-
-## Uruchomienie
+Python 3.13, Flask 3.1. `MONGODB_URI` opcjonalne — bez niego jedzie na JSON. Rate limit: 30/min na `check_brain`, 10/min na `learn`. Testy w `tests/`.
 
 ```bash
 pip install -r requirements.txt
 cp .env.example .env
 python shark_v18_cloud.py
-# produkcja: gunicorn shark_v18_cloud:app
 ```
 
-Bez `MONGODB_URI` w `.env` — działa na lokalnym pliku JSON.
+Produkcja: `gunicorn shark_v18_cloud:app`. Więcej o Render/Atlas: `DEPLOY_CLOUD.md`.
 
----
+`POST /api/learn` — dopisuje sygnaturę (ograniczone). `/admin` — panel, wymaga Mongo.
 
-## API
-
-```
-POST /api/check_brain   sprawdza urządzenie
-POST /api/learn         uczy nowej sygnatury
-GET  /admin             panel administracyjny (wymaga MongoDB)
-```
-
----
-
-*Licencja proprietary.*
+Proprietary.
