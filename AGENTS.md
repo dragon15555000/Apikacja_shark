@@ -20,3 +20,9 @@ Repozytorium podlega automatycznemu audytowi jakości i bezpieczeństwa. Każdy 
 ## 4. Procedura PR i Weryfikacja
 - Każdy Pull Request musi wypełniać szablon `.github/PULL_REQUEST_TEMPLATE.md`.
 - PR jest weryfikowany przez lokalnego strażnika AI (`.github/workflows/ai-gatekeeper.yml`) na self-hosted runnerze.
+
+## Środowisko i granice autonomii
+- Wszystkie komendy uruchomieniowe i testowe wykonuj wyłącznie przez `justfile` (np. `just check`, `just setup`).
+- Topologię usług i środowisk sprawdzaj w `docs/infrastructure/server-map.yaml`, a indeks kontekstu w `llms.txt`.
+- **DOZWOLONE autonomicznie:** odczyt logów, uruchomienie `just check`, zmiany w `src/` i `tests/`.
+- **WYMAGANA ZGODA CZŁOWIEKA:** modyfikacje `docker-compose.yml`, migracje destrukcyjne (`DROP`, `TRUNCATE`), zmiany w `.github/workflows/` i `.mcp.json`, operacje na środowisku `production`.

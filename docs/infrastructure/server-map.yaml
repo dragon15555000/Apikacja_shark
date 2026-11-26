@@ -1,0 +1,35 @@
+# Maszynowa mapa środowisk i usług projektu.
+# UWAGA BEZPIECZEŃSTWA: Nie wpisuj tu prawdziwych adresów IP, prywatnych domen,
+# nazw użytkowników SSH ani haseł. Używaj wyłącznie aliasów z ~/.ssh/config
+# oraz referencji do zmiennych z pliku .env.example.
+
+environments:
+  local:
+    orchestrator: docker-compose
+    compose_file: docker-compose.yml
+    services:
+      app:
+        port: 8000
+        healthcheck: http://localhost:8000/health
+        logs_cmd: docker compose logs -f app
+      db:
+        engine: postgres:16
+        port: 5432
+        env_ref: LOCAL_DATABASE_URL # definicja w .env.example
+
+  staging:
+    ssh_alias: app-staging # zdefiniowane lokalnie w ~/.ssh/config
+    deploy_method: github-actions-self-hosted
+    services:
+      app:
+        container: app_staging
+        healthcheck: https://staging.example.internal/health
+        logs_cmd: ssh app-staging "docker logs --tail 200 app_staging"
+
+  production:
+    ssh_alias: app-prod # zdefiniowane lokalnie w ~/.ssh/config
+    ai_access: read-only
+    forbidden_actions:
+      - direct-ssh-write
+      - docker-compose-down-v
+      - manual-db-migration

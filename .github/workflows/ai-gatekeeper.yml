@@ -13,9 +13,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Extract PR Diff
+      - name: Extract PR Diff & Changed Files
         run: |
           git fetch origin ${{ github.base_ref }} || true
+          git diff --name-only origin/${{ github.base_ref }}...HEAD > changed_files.txt || git diff --name-only HEAD~1 > changed_files.txt
           git diff origin/${{ github.base_ref }}...HEAD > pr_diff.patch || git diff HEAD~1 > pr_diff.patch
 
       - name: Run AI Review via Local Ollama
@@ -35,6 +36,11 @@ jobs:
           with open("pr_diff.patch", "r", errors="ignore") as f:
               diff = f.read()
 
+          changed_files = []
+          if os.path.exists("changed_files.txt"):
+              with open("changed_files.txt", "r") as f:
+                  changed_files = [line.strip() for line in f if line.strip()]
+
           if len(diff) > 25000:
               diff = diff[:25000] + "\n...[ucięto ze względu na limit długości]..."
 
@@ -43,15 +49,27 @@ jobs:
               with open("AGENTS.md", "r", errors="ignore") as f:
                   rules = f.read()
 
-          prompt = f"""Jesteś surowym Code Reviewerem. Przeanalizuj poniższy kod pod kątem zgodności z regułami:
+          extra_context = ""
+          api_touched = any("api/" in p or "routes" in p or "endpoints" in p for p in changed_files)
+          infra_touched = any("docker-compose" in p or "infrastructure" in p or "deploy" in p or ".github/workflows" in p for p in changed_files)
+
+          if api_touched and os.path.exists("docs/api/openapi.yaml"):
+              with open("docs/api/openapi.yaml", "r", errors="ignore") as f:
+                  extra_context += f"\nKONTRAKT API (docs/api/openapi.yaml):\n{f.read()[:6000]}\n"
+
+          if infra_touched and os.path.exists("docs/infrastructure/server-map.yaml"):
+              with open("docs/infrastructure/server-map.yaml", "r", errors="ignore") as f:
+                  extra_context += f"\nMAPA ŚRODOWISK (docs/infrastructure/server-map.yaml):\n{f.read()[:4000]}\n"
+
+          prompt = f"""Jesteś surowym Code Reviewerem. Przeanalizuj poniższy kod pod kątem zgodności z regułami i kontraktami:
 
 REGUŁY (AGENTS.md):
 {rules}
-
+{extra_context}
 RÓŻNICA W KODZIE (DIFF):
 {diff}
 
-Jeśli kod narusza reguły, opisz zwięźle błędy. Jeśli jest poprawny i bezpieczny, w podsumowaniu napisz dokładnie słowo: "Zatwierdzono"."""
+Jeśli kod narusza reguły (lub powoduje rozjazd z kontraktem API/mapą infrastruktury, albo zawiera sekrety/prywatne IP), opisz zwięźle błędy. Jeśli jest poprawny i bezpieczny, w podsumowaniu napisz dokładnie słowo: "Zatwierdzono"."""
 
           req = urllib.request.Request(
               f"{os.environ.get(\"OLLAMA_HOST\", \"http://127.0.0.1:11434\")}/api/generate",
@@ -76,6 +94,5 @@ Jeśli kod narusza reguły, opisz zwięźle błędy. Jeśli jest poprawny i bezp
                   print("\n[AI Review]: Zatwierdzono pomyślnie.")
           except Exception as e:
               print(f"Ostrzeżenie przy analizie AI: {e}")
-              # Nie blokuj twardo w razie tymczasowej niedostępności Ollamy
               sys.exit(0)
           '

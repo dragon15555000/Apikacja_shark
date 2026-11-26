@@ -1,0 +1,2 @@
+-- Struktura bazy danych (tylko schemat DDL, bez danych produkcyjnych).
+-- Wygeneruj aktualny zrzut poleceniem: just db-schema-dump

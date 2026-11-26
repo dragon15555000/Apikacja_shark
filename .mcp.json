@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "postgres-local": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-postgres", "${LOCAL_DATABASE_URL}"]
+    },
+    "git": {
+      "command": "uvx",
+      "args": ["mcp-server-git", "--repository", "."]
+    }
+  }
+}

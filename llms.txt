@@ -1,0 +1,9 @@
+# llms.txt - Indeks kontekstu projektu dla agentów AI
+
+- `AGENTS.md` - Wytyczne architektoniczne, granice autonomii i wymagania jakościowe dla agentów AI.
+- `CONTRIBUTING.md` - Zasady pracy z gitem (Conventional Commits, cykl gałęzi, wymagania PR).
+- `justfile` - Jednoznaczne, gotowe komendy do uruchomienia, testów, lintingu i zrzutu bazy danych.
+- `docs/infrastructure/server-map.yaml` - Maszynowa mapa środowisk (local, staging, production), kontenerów i healthchecków.
+- `docs/api/openapi.yaml` - Kontrakt API w formacie OpenAPI (generowany automatycznie z kodu).
+- `docs/db/schema.sql` - Aktualna struktura tabel i indeksów bazy danych (DDL bez danych produkcyjnych).
+- `.mcp.json` - Konfiguracja serwerów MCP (postgres-local, git) dla narzędzi kodujących.
