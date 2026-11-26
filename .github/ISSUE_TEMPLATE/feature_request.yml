@@ -1,0 +1,19 @@
+name: "Propozycja Funkcjonalności"
+description: Zasugeruj pomysł lub ulepszenie dla tego projektu.
+title: "[FEAT]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem lub potrzeba biznesowa
+      description: Jaki problem ta funkcja ma rozwiązać?
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proponowane rozwiązanie
+      description: Jak powinno wyglądać działanie tej funkcji?
+    validations:
+      required: true

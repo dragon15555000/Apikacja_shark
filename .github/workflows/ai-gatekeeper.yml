@@ -1,0 +1,81 @@
+name: Local AI Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  ai-review:
+    runs-on: [self-hosted, linux]
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract PR Diff
+        run: |
+          git fetch origin ${{ github.base_ref }} || true
+          git diff origin/${{ github.base_ref }}...HEAD > pr_diff.patch || git diff HEAD~1 > pr_diff.patch
+
+      - name: Run AI Review via Local Ollama
+        env:
+          OLLAMA_HOST: "http://127.0.0.1:11434"
+        run: |
+          python3 -c '
+          import urllib.request
+          import json
+          import os
+          import sys
+
+          if not os.path.exists("pr_diff.patch") or os.path.getsize("pr_diff.patch") == 0:
+              print("Brak zmian w diffie do weryfikacji.")
+              sys.exit(0)
+
+          with open("pr_diff.patch", "r", errors="ignore") as f:
+              diff = f.read()
+
+          if len(diff) > 25000:
+              diff = diff[:25000] + "\n...[ucięto ze względu na limit długości]..."
+
+          rules = ""
+          if os.path.exists("AGENTS.md"):
+              with open("AGENTS.md", "r", errors="ignore") as f:
+                  rules = f.read()
+
+          prompt = f"""Jesteś surowym Code Reviewerem. Przeanalizuj poniższy kod pod kątem zgodności z regułami:
+
+REGUŁY (AGENTS.md):
+{rules}
+
+RÓŻNICA W KODZIE (DIFF):
+{diff}
+
+Jeśli kod narusza reguły, opisz zwięźle błędy. Jeśli jest poprawny i bezpieczny, w podsumowaniu napisz dokładnie słowo: "Zatwierdzono"."""
+
+          req = urllib.request.Request(
+              f"{os.environ.get(\"OLLAMA_HOST\", \"http://127.0.0.1:11434\")}/api/generate",
+              data=json.dumps({
+                  "model": "qwen2.5:14b",
+                  "prompt": prompt,
+                  "stream": False
+              }).encode("utf-8"),
+              headers={"Content-Type": "application/json"}
+          )
+
+          try:
+              response = urllib.request.urlopen(req, timeout=120)
+              result = json.loads(response.read().decode("utf-8"))
+              review = result.get("response", "")
+              print("--- WYNIK ANALIZY LOKALNEGO STRAŻNIKA AI (Ollama Local) ---")
+              print(review)
+              if "Zatwierdzono" not in review:
+                  print("\n[AI Review]: Wykryto błędy lub naruszenie standardów.")
+                  sys.exit(1)
+              else:
+                  print("\n[AI Review]: Zatwierdzono pomyślnie.")
+          except Exception as e:
+              print(f"Ostrzeżenie przy analizie AI: {e}")
+              # Nie blokuj twardo w razie tymczasowej niedostępności Ollamy
+              sys.exit(0)
+          '

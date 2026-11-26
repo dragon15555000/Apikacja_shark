@@ -1,0 +1,30 @@
+name: "Zgłoszenie Błędu"
+description: Utwórz zgłoszenie, aby pomóc nam naprawić problem.
+title: "[BUG]: "
+labels: ["bug", "triage"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Opis błędu
+      description: Jasny i zwięzły opis tego, co jest nie tak.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Kroki do odtworzenia
+      description: Wskaż dokładnie jak wywołać błąd.
+      placeholder: |
+        1. Przejdź do...
+        2. Kliknij na...
+        3. Zobacz błąd...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Oczekiwane zachowanie
+      description: Co powinno się wydarzyć zamiast błędu?
+    validations:
+      required: false
